@@ -66,7 +66,7 @@ export const uploadProfilePicture = async (req: Request, res: Response) =>{
         });
         
     } catch (error){
-        logger.error('Profile picture delete error:', error);
+        logger.error('Profile picture update error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
