@@ -1,35 +1,38 @@
 {
-  "name": "se-proj-backend",
-  "version": "1.0.0",
-  "main": "bundle/main.js",
-  "scripts": {
-    "dev": "nodemon",
-    "bundle": "rimraf bundle && esbuild src/main.ts --platform=node --bundle --minify --keep-names --outdir=bundle --outbase=src --sourcemap && copyfiles package.json bundle"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/OmsinKrissada/se-proj-backend.git"
-  },
-  "author": "",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/OmsinKrissada/se-proj-backend/issues"
-  },
-  "homepage": "https://github.com/OmsinKrissada/se-proj-backend#readme",
-  "description": "",
-  "dependencies": {
-    "@prisma/client": "^6.15.0",
-    "express": "^5.1.0"
-  },
-  "devDependencies": {
-    "@swc-node/register": "^1.11.1",
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.3.0",
-    "dotenv": "^17.2.1",
-    "nodemon": "^3.1.10",
-    "prisma": "^6.15.0",
-    "rimraf": "^6.0.1",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
-  }
+	"name": "se-proj-backend",
+	"version": "1.0.0",
+	"main": "bundle/app.js",
+	"scripts": {
+		"dev": "nodemon",
+		"bundle": "rimraf bundle && esbuild src/app.ts --platform=node --bundle --minify --keep-names --outdir=bundle --outbase=src --sourcemap && copyfiles package.json bundle",
+		"format": "prettier --write src"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/OmsinKrissada/se-proj-backend.git"
+	},
+	"author": "",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/OmsinKrissada/se-proj-backend/issues"
+	},
+	"homepage": "https://github.com/OmsinKrissada/se-proj-backend#readme",
+	"description": "",
+	"dependencies": {
+		"@prisma/client": "^6.15.0",
+		"express": "^5.1.0",
+		"winston": "^3.17.0"
+	},
+	"devDependencies": {
+		"@swc-node/register": "^1.11.1",
+		"@types/express": "^5.0.3",
+		"@types/node": "^24.3.0",
+		"dotenv": "^17.2.1",
+		"nodemon": "^3.1.10",
+		"prettier": "^3.6.2",
+		"prisma": "^6.15.0",
+		"rimraf": "^6.0.1",
+		"tsx": "^4.20.5",
+		"typescript": "^5.9.2"
+	}
 }
