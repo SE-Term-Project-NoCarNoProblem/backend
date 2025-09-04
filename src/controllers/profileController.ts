@@ -13,6 +13,14 @@ export const uploadProfilePicture = async (req: Request, res: Response) =>{
         if(!userId){
             return res.status(400).json({ error: 'User ID is required' });
         }
+
+        const maxFileSize = 5 * 1024 * 1024; // 5MB
+        if(file.size > maxFileSize){
+            return res.status(400).json({
+                error: 'File too large. Maximum file size is 5MB'
+            });
+        }
+        
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
         if(!allowedTypes.includes(file.mimetype)){
             return res.status(400).json({
