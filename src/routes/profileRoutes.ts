@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { uploadProfilePicture } from '../controllers/profileController';
+import { uploadProfilePicture, deleteProfilePicture } from '../controllers/profileController';
 
 const router = Router();
 
@@ -13,5 +13,5 @@ const upload = multer({
 });
 
 router.post('/upload/:userId', upload.single('profilePicture'), uploadProfilePicture);
-
+router.delete('/delete/:userId', deleteProfilePicture);
 export default router;

@@ -70,3 +70,66 @@ export const uploadProfilePicture = async (req: Request, res: Response) =>{
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+export const deleteProfilePicture = async (req: Request, res: Response) => {
+    try{
+        const {userId} = req.params
+
+        const user = await prisma.user.findUnique({
+            where: {id: userId},
+            select: {profile_pic: true}
+        });
+        
+        if (!user){
+            return res.status(404).json({error: 'User not found'});
+        }
+
+        if(!user.profile_pic){
+            return res.status(400).json({
+                error: 'User has no profile picture to delete'
+            });
+        }
+
+        const filePath = `${userId}/avatar.webp`;
+
+        const { error: deleteError} = await supabase.storage
+            .from('profile_pic')
+            .remove([filePath]);
+
+        if (deleteError){
+            logger.error('Storage delete error:', deleteError)
+
+            if(deleteError.message?.includes('not found') || deleteError.message?.includes('does not exist')){
+                return res.status(404).json({
+                    error: 'Profile picture file not found in storage'
+                });
+            }
+
+            return res.status(500).json({
+                error: 'Failed to delete profile picture from storage'
+            });
+        }
+
+
+        const updatedUser = await prisma.user.update({
+            where: {id: userId},
+            data: {profile_pic: null},
+            select: {
+                id: true,
+                fullname: true,
+                email: true,
+                phone_number: true,
+                profile_pic: true
+            }
+        });
+        logger.info(`Profile picture deleted for user ${userId}`);
+
+        res.status(200).json({
+            message: 'Profile picture deleted successfully',
+            user: updatedUser
+        });
+    }catch (error){
+        logger.error('Profile picture delete error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+}
