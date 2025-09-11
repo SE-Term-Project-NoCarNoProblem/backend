@@ -51,9 +51,8 @@ export const uploadProfilePicture = async (req: Request, res: Response) =>{
         
         const profilePicUrl = urlData.publicUrl;
 
-        //Update user profile_pic in database
-        //might change to update from endpoint soon
-        const updatedUser = await prisma.user.updateManyAndReturn({
+        //Update user profile_pic in database and include driver relations
+        const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: { profile_pic: profilePicUrl },
             select: {
@@ -61,16 +60,49 @@ export const uploadProfilePicture = async (req: Request, res: Response) =>{
                 fullname: true,
                 email: true,
                 phone_number: true,
-                profile_pic: true
+                profile_pic: true,
+                driver: {
+                    include: {
+                        verified_driver: true
+                    }
+                }
             }
         });
+
+        // Move verified driver to waiting_driver table
+        if (updatedUser.driver?.verified_driver) {
+            // Remove from verified_driver
+            await prisma.verified_driver.delete({
+                where: { id: userId }
+            });
+            
+            // Add to waiting_driver
+            await prisma.waiting_driver.create({
+                data: {
+                    id: userId,
+                    requested_date: new Date()
+                }
+            });
+            
+            logger.info(`Driver moved to waiting status for user ${userId}`);
+        }
 
         logger.info(`Profile picture updated for user ${userId}`);
 
         res.status(200).json({
             message: 'Profile picture uploaded successfully',
-            user: updatedUser,
-            profilePicUrl
+            user: {
+                id: updatedUser.id,
+                fullname: updatedUser.fullname,
+                email: updatedUser.email,
+                phone_number: updatedUser.phone_number,
+                profile_pic: updatedUser.profile_pic
+            },
+            profilePicUrl,
+            ...(updatedUser.driver?.verified_driver && {
+                driverStatusUpdated: true,
+                statusMessage: 'Driver moved from verified to waiting status'
+            })
         });
         
     } catch (error){
