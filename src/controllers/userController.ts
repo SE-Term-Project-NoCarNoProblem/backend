@@ -100,9 +100,9 @@ export async function patchMe(req: Request, res: Response){
             return res.status(401).json({error: 'User not authenticated'});
         }
 
-        const {fullname, email, phone_number, bank_account, ...otherfields } = req.body;
+        const {fullname, email, phone_number, bank_account, favorite_pickup_location, favorite_dropoff_location, ...otherfields } = req.body;
 
-        const allowedFields = ['fullname', 'email', 'phone_number', 'bank_account'];
+        const allowedFields = ['fullname', 'email', 'phone_number', 'bank_account', 'favorite_pickup_location', 'favorite_dropoff_location'];
         const invalidFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
 
         if(invalidFields.length > 0){
@@ -133,6 +133,12 @@ export async function patchMe(req: Request, res: Response){
             });
         }
 
+        if ((favorite_pickup_location || favorite_dropoff_location) && !existingUser.customer) {
+            return res.status(400).json({ 
+                error: 'Favorite locations can only be updated by customers' 
+            });
+        }
+
         const result = await prisma.$transaction(async (tx) => {
             const updatedUser = await tx.user.update({
                 where: {id:userId},
@@ -143,11 +149,28 @@ export async function patchMe(req: Request, res: Response){
                 }
             });
 
-            if (bank_account && existingUser.customer) {
-                await tx.customer.update({
-                    where: { id: userId },
-                    data: { bank_account }
-                });
+            if (existingUser.customer) {
+                if (bank_account) {
+                    await tx.customer.update({
+                        where: { id: userId },
+                        data: { bank_account }
+                    });
+                }
+                if (favorite_pickup_location) {
+                    await tx.$executeRaw`
+                        UPDATE customer 
+                        SET favorite_pickup_location = ${`(${favorite_pickup_location})`}::point
+                        WHERE id = ${userId}::uuid
+                    `;
+                }
+
+                if (favorite_dropoff_location) {
+                    await tx.$executeRaw`
+                        UPDATE customer 
+                        SET favorite_dropoff_location = ${`(${favorite_dropoff_location})`}::point
+                        WHERE id = ${userId}::uuid
+                    `;
+                }
             }
 
             if (bank_account && existingUser.driver?.verified_driver) {
@@ -202,7 +225,9 @@ export async function patchMe(req: Request, res: Response){
             phone_number: result?.phone_number,
             profile_pic: result?.profile_pic,
             ...(result?.customer?.bank_account && { bank_account: result.customer.bank_account }),
-            ...(result?.driver?.verified_driver?.bank_account && { bank_account: result.driver.verified_driver.bank_account })
+            ...(result?.driver?.verified_driver?.bank_account && { bank_account: result.driver.verified_driver.bank_account }),
+            ...(result?.customer && (result.customer as any)?.favorite_pickup_location && { favorite_pickup_location: (result.customer as any).favorite_pickup_location }),
+            ...(result?.customer && (result.customer as any)?.favorite_dropoff_location && { favorite_dropoff_location: (result.customer as any).favorite_dropoff_location })
         };
 
         res.json({
