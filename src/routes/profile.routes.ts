@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { uploadProfilePicture, deleteProfilePicture } from '../controllers/profileController';
+import { uploadProfilePicture, deleteProfilePicture } from '../controllers/profile.controller';
 
 const router = Router();
 
