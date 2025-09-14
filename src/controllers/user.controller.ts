@@ -32,8 +32,7 @@ export async function getUser(req: Request, res: Response){
 
 export async function getMe(req: Request, res:Response){
     try{
-        //waiting to change to auth check soon
-        const userId = req.headers['user-id'] as string;
+        const userId = res.locals.user?.id;
 
         if(!userId){
             return res.status(401).json({ error: 'User not authenticated'});
@@ -93,8 +92,7 @@ export async function getMe(req: Request, res:Response){
 
 export async function patchMe(req: Request, res: Response){
     try{
-        //waiting to change to auth check soon
-        const userId = req.headers['user-id'] as string;
+        const userId = res.locals.user?.id;
 
         if(!userId){
             return res.status(401).json({error: 'User not authenticated'});

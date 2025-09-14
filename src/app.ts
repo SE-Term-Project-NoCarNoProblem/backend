@@ -2,8 +2,8 @@ import "dotenv/config";
 import express from "express";
 import { logger } from "./utils/logger";
 import { requestLog } from "./middlewares/logging";
-import profileRoutes from "./routes/profileRoutes";
-import userRoutes from "./routes/userRoutes";
+import profileRoutes from "./routes/profile.routes";
+import userRoutes from "./routes/user.routes";
 import authRoutes from "./routes/auth.routes";
 
 export const app = express();
