@@ -21,7 +21,9 @@
 	"dependencies": {
 		"@prisma/client": "^6.15.0",
 		"@supabase/supabase-js": "^2.56.1",
+		"@types/cors": "^2.8.19",
 		"@types/multer": "^2.0.0",
+		"cors": "^2.8.5",
 		"express": "^5.1.0",
 		"multer": "^2.0.2",
 		"uuid": "^13.0.0",
