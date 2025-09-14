@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
 import { logger } from "./utils/logger";
 import { requestLog } from "./middlewares/logging";
 import profileRoutes from "./routes/profileRoutes";
@@ -7,6 +8,7 @@ import userRoutes from "./routes/userRoutes";
 
 export const app = express();
 
+app.use(cors());
 app.use(requestLog);
 
 app.use("/api/profile", profileRoutes);
