@@ -100,7 +100,7 @@ export async function patchMe(req: Request, res: Response){
 
         const {fullname, email, phone_number, favorite_pickup_location, favorite_dropoff_location, ...otherfields } = req.body;
 
-        const allowedFields = ['fullname', 'email', 'phone_number', 'favorite_pickup_location', 'favorite_dropoff_location'];
+        const allowedFields = ['fullname', 'email', 'gender', 'phone_number', 'favorite_pickup_location', 'favorite_dropoff_location'];
         const invalidFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
 
         if(invalidFields.length > 0){
@@ -203,6 +203,7 @@ export async function patchMe(req: Request, res: Response){
             email: result?.email,
             phone_number: result?.phone_number,
             profile_pic: result?.profile_pic,
+            gender: result?.gender,
             ...(result?.customer && (result.customer as any)?.favorite_pickup_location && { favorite_pickup_location: (result.customer as any).favorite_pickup_location }),
             ...(result?.customer && (result.customer as any)?.favorite_dropoff_location && { favorite_dropoff_location: (result.customer as any).favorite_dropoff_location })
         };
