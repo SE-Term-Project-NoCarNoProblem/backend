@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { updateDriverLocation, getDrivers } from "../controllers/driver.controller";
+import { updateDriverLocation, getDrivers, getNearbyDrivers } from "../controllers/driver.controller";
 
 const router = Router();
 
@@ -8,5 +8,8 @@ router.post("/location", updateDriverLocation);
 
 // Customer fetches all drivers
 router.get("/location", getDrivers);
+
+// Get nearby drivers
+router.get("/nearby", getNearbyDrivers);
 
 export default router;
