@@ -2,13 +2,10 @@ import "dotenv/config";
 import express from "express";
 import { logger } from "./utils/logger";
 import { requestLog } from "./middlewares/logging";
-<<<<<<< HEAD
-import ridesRoutes from './routes/ridesRoutes';
-import requestRoutes from "./routes/requestRoutes";
-=======
+import ridesRoutes from './routes/ride.routes';
+import requestRoutes from "./routes/request.routes";
 import profileRoutes from "./routes/profile.routes";
 import userRoutes from "./routes/user.routes";
->>>>>>> b03ee5d (fix: rename profile and user in controllers and routes)
 
 export const app = express();
 
