@@ -4,16 +4,17 @@ import {
   deleteRequest,
   nearbyRequests,
 } from "../controllers/request.controller";
+import { auth } from "../middlewares/auth";
 
 const router = Router();
 
 //1 create ride request
-router.post("/", createRequest);
+router.post("/", auth, createRequest);
 
 //2 delete ride request
-router.delete("/:id", deleteRequest);
+router.delete("/:id", auth, deleteRequest);
 
 //3 fetch nearby requests (sorted by distance)
-router.get("/nearby", nearbyRequests);
+router.get("/nearby", auth, nearbyRequests);
 
 export default router;

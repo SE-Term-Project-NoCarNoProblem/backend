@@ -24,7 +24,9 @@ export const rideValidator = z.object({
 export async function acceptRide(req: Request, res: Response) {
     try {
 
-        const driverId = res.locals.user.id;
+        const driverId = res.locals.user?.id;
+        if (!driverId) return res.status(401).json({ error: "User not authenticated" });
+        
         const parseResult = rideValidator.safeParse({
             id: req.body.ride_id,
             pickup_lat: Number(req.body.pickup_lat),
@@ -93,7 +95,9 @@ export async function cancelRide(req: Request, res: Response) {
         if (!rideId) {
             return res.status(400).json({ error: 'Ride ID is required' });
         }
-        const driverId = res.locals.user.id;
+        const driverId = res.locals.user?.id;
+        if (!driverId) return res.status(401).json({ error: "User not authenticated" });
+
         //check if the ride exists and belongs to the driver
         const ride = await prisma.ride.findUnique({
             where: { id: rideId },
