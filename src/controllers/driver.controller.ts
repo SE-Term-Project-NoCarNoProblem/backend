@@ -13,6 +13,11 @@ export const updateDriverLocation = async (req: Request, res: Response) => {
 	try {
 		// res.locals.user = { id: "driver1" };
 		const driverId = res.locals.user?.id;
+		// TODO: should we ensure that the user is a driver?
+		if (!driverId) {
+			return res.status(401).json({ error: "User not authenticated" });
+		}
+
 		const parseResult = locationSchema.safeParse(req.body);
 		if (!parseResult.success) {
 			return res
@@ -20,10 +25,6 @@ export const updateDriverLocation = async (req: Request, res: Response) => {
 				.json({ error: z.prettifyError(parseResult.error) });
 		}
 		const { lat, lng } = parseResult.data;
-
-		if (!driverId) {
-			return res.status(401).json({ error: "Unauthorized" });
-		}
 
 		if (lat === undefined || lng === undefined) {
 			return res
@@ -41,5 +42,10 @@ export const updateDriverLocation = async (req: Request, res: Response) => {
 
 // GET /api/drivers
 export const getDrivers = (req: Request, res: Response) => {
+	// auth just to prevent spam
+	if (!res.locals.user) {
+		return res.status(401).json({ error: "User not authenticated" });
+	}
+
 	return res.json(Object.fromEntries(driverLocations.entries()));
 };
