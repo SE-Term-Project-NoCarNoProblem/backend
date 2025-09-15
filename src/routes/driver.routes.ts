@@ -7,6 +7,6 @@ const router = Router();
 router.post("/location", updateDriverLocation);
 
 // Customer fetches all drivers
-router.get("/", getDrivers);
+router.get("/location", getDrivers);
 
 export default router;
