@@ -8,6 +8,8 @@ import profileRoutes from "./routes/profile.routes";
 import userRoutes from "./routes/user.routes";
 import authRoutes from "./routes/auth.routes";
 import driverRoutes from "./routes/driver.routes";
+import ridesRoutes from "./routes/ride.routes";
+import requestRoutes from "./routes/request.routes";
 
 export const app = express();
 
@@ -32,6 +34,8 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/drivers", driverRoutes);
+app.use("/api/rides", ridesRoutes);
+app.use("/api/requests", requestRoutes);
 
 const port = +(process.env.PORT || 8000);
 app.listen(port);
