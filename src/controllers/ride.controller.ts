@@ -23,6 +23,7 @@ export const rideValidator = z.object({
 
 export async function acceptRide(req: Request, res: Response) {
     try {
+
         const deleted = deleteRequest(req.body.ride_id);
         if (!deleted) {
             return res.status(404).json({error: 'Ride request not found'});
@@ -80,9 +81,11 @@ export async function cancelRide(req: Request, res: Response) {
             return res.status(400).json({ error: 'Ride ID is required' });
         }
 
-        const result = await prisma.ride.delete({
+        const result = await prisma.ride.update({
             where: { id: rideId },
-        });
+            data: { ride_status: 'canceled' },
+        })
+
         if (!result) {
             return res.status(404).json({ error: 'Ride not found' });
         }
