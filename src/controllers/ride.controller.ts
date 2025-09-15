@@ -93,6 +93,17 @@ export async function cancelRide(req: Request, res: Response) {
         if (!rideId) {
             return res.status(400).json({ error: 'Ride ID is required' });
         }
+        const driverId = res.locals.user.id;
+        //check if the ride exists and belongs to the driver
+        const ride = await prisma.ride.findUnique({
+            where: { id: rideId },
+        });
+        if (!ride) {
+            return res.status(404).json({ error: 'Ride not found' });
+        }
+        if (ride.driver_id !== driverId) {
+            return res.status(403).json({ error: `DriverId = ${driverId} is not authorized to cancel this ride` });
+        }
 
         const result = await prisma.ride.update({
             where: { id: rideId },
