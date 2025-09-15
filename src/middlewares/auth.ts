@@ -2,8 +2,15 @@ import { NextFunction, Request, Response } from "express";
 import { logger } from "../utils/logger";
 import { supabase } from "../lib/supabase";
 
+const TOKEN_SOURCE: "localstorage" | "cookie" = "localstorage";
 export async function auth(req: Request, res: Response, next: NextFunction) {
-	const token = req.cookies.token;
+	const token =
+		TOKEN_SOURCE == "localstorage"
+			? req.headers.authorization
+			: req.cookies?.token;
+
+	logger.debug(`token: ${token}`);
+
 	if (!token) return res.status(401).send("Token is not provided");
 	const claim = await supabase.auth.getClaims(token);
 
