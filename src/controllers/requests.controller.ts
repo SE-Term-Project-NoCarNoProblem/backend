@@ -6,28 +6,74 @@ import {
   nearbyRequests as storeNearby,
 } from "../lib/requestStore";
 
+// add distance calc function from utils
+import { haversineM } from "../utils/geo";
+
 const CreateSchema = z.object({
   customer_id: z.string().min(1),
   service: z.string().min(1),
   note_to_driver: z.string().optional().nullable(),
-  fare: z.number().nonnegative().optional().nullable(),
-  distance_m: z.number().int().nonnegative().optional().nullable(),
-  pickup_lng: z.number(), pickup_lat: z.number(),
+  pickup_lng: z.number(), pickup_lat: z.number(), // remove fare and distance field
   dropoff_lng: z.number(), dropoff_lat: z.number(),
 });
+
+
+function calculateFare(distanceM: number): number {
+  const distanceKm = distanceM / 1000;
+  let fare = 0;
+
+  if (distanceKm <= 1) {
+    return 35; // base
+  }
+
+  fare = 35; // first km
+  let remaining = distanceKm - 1;
+
+  const tiers = [
+    { limit: 9, rate: 6.5 },   // 1–10 km
+    { limit: 10, rate: 7.0 },  // 10–20 km
+    { limit: 20, rate: 8.0 },  // 20–40 km
+    { limit: 20, rate: 8.5 },  // 40–60 km
+    { limit: 20, rate: 9.0 },  // 60–80 km
+    { limit: Infinity, rate: 10.5 }, // 80+ km
+  ];
+
+  for (const tier of tiers) {
+    if (remaining <= 0) break;
+
+    const take = Math.min(remaining, tier.limit);
+    fare += take * tier.rate;
+    remaining -= take;
+  }
+
+  return Math.round(fare);
+} // calculate based on real thai taxi rate
+
 
 export async function createRequest(req: Request, res: Response) {
   try {
     const b = CreateSchema.parse(req.body);
+
+    // calculated distance in meter
+    const distanceM = Math.round(
+      haversineM(b.pickup_lat, b.pickup_lng, b.dropoff_lat, b.dropoff_lng)
+    );
+
+	// calculted fare in baht
+	const fare = calculateFare(distanceM)
+
     const r = storeCreate({
       customer_id: b.customer_id,
       service: b.service,
       note_to_driver: b.note_to_driver ?? null,
-      fare: b.fare ?? null,
-      distance_m: b.distance_m ?? null,
-      pickup_lng: b.pickup_lng, pickup_lat: b.pickup_lat,
-      dropoff_lng: b.dropoff_lng, dropoff_lat: b.dropoff_lat,
+      fare,                 // added (based on distance)
+      distance_m: distanceM, // added (based on input lat/lng)
+      pickup_lng: b.pickup_lng,
+      pickup_lat: b.pickup_lat,
+      dropoff_lng: b.dropoff_lng,
+      dropoff_lat: b.dropoff_lat,
     });
+
     return res.status(201).json(r);
 	} catch (err: unknown) {
 	if (err instanceof ZodError) {
