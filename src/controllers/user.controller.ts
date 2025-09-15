@@ -137,7 +137,7 @@ export async function patchMe(req: Request, res: Response){
                 data:{
                     ...(fullname && {fullname}),
                     ...(email && {email}),
-                    ...(phone_number && {phone_number})
+                    ...(phone_number && {phone_number}),
                     ...(gender && {gender})
                 }
             });
