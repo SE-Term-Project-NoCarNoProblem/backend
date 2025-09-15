@@ -127,6 +127,13 @@ export async function accountSetup(req: Request, res: Response) {
 				// TODO: license pic
 			},
 		});
+	} else if (form.role == "customer") {
+		await prisma.customer.create({
+			data: {
+				id: user.id,
+				// TODO: license pic
+			},
+		});
 	}
 
 	return res.send(createdUser);

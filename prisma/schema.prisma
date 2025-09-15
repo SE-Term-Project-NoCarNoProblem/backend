@@ -31,7 +31,6 @@ model customer {
   id                        String                @id @db.Uuid
   favorite_pickup_location  Unsupported("point")?
   favorite_dropoff_location Unsupported("point")?
-  bank_account              String
   user                      user                  @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "customer_user_fk")
   ride                      ride[]
 }
