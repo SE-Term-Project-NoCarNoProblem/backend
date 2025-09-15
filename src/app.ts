@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { logger } from "./utils/logger";
 import { requestLog } from "./middlewares/logging";
@@ -16,7 +16,18 @@ app.use(requestLog);
 
 app.use("/api/profile", profileRoutes);
 
-app.use(express.json());
+app.use(
+	express.json({
+		strict: true,
+	})
+);
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+	if (err instanceof SyntaxError && "body" in err) {
+		return res.status(400).json({ error: "Malformed JSON" });
+	}
+	next(err);
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
