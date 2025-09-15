@@ -5,13 +5,15 @@ import { logger } from '../utils/logger';
 
 export const uploadProfilePicture = async (req: Request, res: Response) =>{
     try{
-        const { userId } = req.params;
+        const userId = res.locals.user?.id;
         const file = req.file;
+        
+        if(!userId){
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+        
         if(!file){
             return res.status(400).json({ error: 'No file uploaded'})
-        }
-        if(!userId){
-            return res.status(400).json({ error: 'User ID is required' });
         }
 
         const maxFileSize = 5 * 1024 * 1024; // 5MB
@@ -113,7 +115,11 @@ export const uploadProfilePicture = async (req: Request, res: Response) =>{
 
 export const deleteProfilePicture = async (req: Request, res: Response) => {
     try{
-        const {userId} = req.params
+        const userId = res.locals.user?.id;
+        
+        if(!userId){
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
 
         const user = await prisma.user.findUnique({
             where: {id: userId},

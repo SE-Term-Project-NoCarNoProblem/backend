@@ -3,8 +3,8 @@ import express from "express";
 import cors from "cors";
 import { logger } from "./utils/logger";
 import { requestLog } from "./middlewares/logging";
-import profileRoutes from "./routes/profileRoutes";
-import userRoutes from "./routes/userRoutes";
+import profileRoutes from "./routes/profile.routes";
+import userRoutes from "./routes/user.routes";
 
 export const app = express();
 
