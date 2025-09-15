@@ -6,19 +6,20 @@ import { prisma } from "../lib/prisma";
 
 const cookieAge = 30 * 24 * 60 * 60 * 1000;
 
-const emailPasswordSchema = z.object({
+const registerSchema = z.object({
 	email: z.email(),
 	password: z.string().min(8),
+});
+
+const loginSchema = z.object({
+	email: z.email(),
+	password: z.string(),
 });
 
 export async function register(req: Request, res: Response) {
 	// TODO: for now, assume only password login & no confirmation email
 
-	const {
-		data: form,
-		success,
-		error,
-	} = emailPasswordSchema.safeParse(req.body);
+	const { data: form, success, error } = registerSchema.safeParse(req.body);
 	if (!success) {
 		return res.status(400).send(z.prettifyError(error));
 	}
@@ -42,11 +43,7 @@ export async function register(req: Request, res: Response) {
 }
 
 export async function login(req: Request, res: Response) {
-	const {
-		data: form,
-		success,
-		error,
-	} = emailPasswordSchema.safeParse(req.body);
+	const { data: form, success, error } = loginSchema.safeParse(req.body);
 	if (!success) {
 		return res.status(400).send(z.prettifyError(error));
 	}
