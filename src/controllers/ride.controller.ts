@@ -23,6 +23,8 @@ export const rideValidator = z.object({
 
 export async function acceptRide(req: Request, res: Response) {
     try {
+
+        const driverId = res.locals.user.id;
         const parseResult = rideValidator.safeParse({
             id: req.body.ride_id,
             pickup_lat: Number(req.body.pickup_lat),
@@ -31,7 +33,7 @@ export async function acceptRide(req: Request, res: Response) {
             dropoff_lng: Number(req.body.dropoff_lng),
             price: Number(req.body.price),
             customer_id: req.body.customer_id,
-            driver_id: req.body.driver_id,
+            driver_id: driverId,
             vehicle_id: req.body.vehicle_id,
             timestamp: req.body.timestamp,
             ride_status: 'ongoing',
@@ -59,7 +61,7 @@ export async function acceptRide(req: Request, res: Response) {
         POINT(${req.body.dropoff_lng}, ${req.body.dropoff_lat}),
         ${Number(req.body.price)},
         ${req.body.customer_id}::uuid,
-        ${req.body.driver_id}::uuid,
+        ${driverId}::uuid,
         ${req.body.vehicle_id}::uuid,
         ${req.body.timestamp}::timestamptz,
         'ongoing'
