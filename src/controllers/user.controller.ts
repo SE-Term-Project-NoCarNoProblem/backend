@@ -98,7 +98,7 @@ export async function patchMe(req: Request, res: Response){
             return res.status(401).json({error: 'User not authenticated'});
         }
 
-        const {fullname, email, phone_number, favorite_pickup_location, favorite_dropoff_location, ...otherfields } = req.body;
+        const {fullname, email, gender, phone_number, favorite_pickup_location, favorite_dropoff_location, ...otherfields } = req.body;
 
         const allowedFields = ['fullname', 'email', 'gender', 'phone_number', 'favorite_pickup_location', 'favorite_dropoff_location'];
         const invalidFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
@@ -138,6 +138,7 @@ export async function patchMe(req: Request, res: Response){
                     ...(fullname && {fullname}),
                     ...(email && {email}),
                     ...(phone_number && {phone_number})
+                    ...(gender && {gender})
                 }
             });
 
