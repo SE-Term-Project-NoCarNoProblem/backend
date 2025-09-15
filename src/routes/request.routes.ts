@@ -3,7 +3,7 @@ import {
   createRequest,
   deleteRequest,
   nearbyRequests,
-} from "../controllers/requestsController";
+} from "../controllers/request.controller";
 
 const router = Router();
 

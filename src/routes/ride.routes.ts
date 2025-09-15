@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { acceptRide, cancelRide } from '../controllers/ridesController';
+import { acceptRide, cancelRide } from '../controllers/ride.controller';
 
 const router = Router();
     
