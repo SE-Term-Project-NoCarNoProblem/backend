@@ -1,6 +1,6 @@
 import {Request, Response} from 'express';
 import {prisma} from '../lib/prisma';
-import {deleteRequest, getRequest, idToCustomer } from '../lib/requestStore';
+import {deleteRequest, getRequest, getIdToCustomerMap } from '../lib/requestStore';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
 
@@ -46,6 +46,7 @@ export async function acceptRide(req: Request, res: Response) {
             return res.status(404).json({error: 'Ride request not found'});
         }
         
+        const idToCustomer = getIdToCustomerMap();
         if (idToCustomer.get(req.body.ride_id) !== req.body.customer_id) {
             return res.status(400).json({error: 'Customer ID does not match the ride request'});
         }

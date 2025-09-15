@@ -22,6 +22,10 @@ export type RideRequest = {
 const byCustomer = new Map<string, Map<string, RideRequest>>();
 const idToCustomer = new Map<string, string>();
 
+export function getIdToCustomerMap() {
+  return idToCustomer;
+}
+
 //get a bucket and create one if there is none that matches the cid
 function getBucket(customerId: string) {
   let b = byCustomer.get(customerId);
