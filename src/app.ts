@@ -3,9 +3,11 @@ import express from "express";
 import cors from "cors";
 import { logger } from "./utils/logger";
 import { requestLog } from "./middlewares/logging";
+
 import profileRoutes from "./routes/profile.routes";
 import userRoutes from "./routes/user.routes";
 import authRoutes from "./routes/auth.routes";
+import driverRoutes from "./routes/driver.routes";
 
 export const app = express();
 
@@ -18,6 +20,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/drivers", driverRoutes);
 
 const port = +(process.env.PORT || 8000);
 app.listen(port);
