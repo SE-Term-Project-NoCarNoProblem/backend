@@ -1,6 +1,6 @@
 import {Request, Response} from 'express';
 import {prisma} from '../lib/prisma';
-import {deleteRequest} from '../lib/requestStore';
+import {deleteRequest, getRequest, idToCustomer } from '../lib/requestStore';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
 
@@ -23,12 +23,6 @@ export const rideValidator = z.object({
 
 export async function acceptRide(req: Request, res: Response) {
     try {
-
-        const deleted = deleteRequest(req.body.ride_id);
-        if (!deleted) {
-            return res.status(404).json({error: 'Ride request not found'});
-        }
-
         const parseResult = rideValidator.safeParse({
             id: req.body.ride_id,
             pickup_lat: Number(req.body.pickup_lat),
@@ -42,26 +36,42 @@ export async function acceptRide(req: Request, res: Response) {
             timestamp: req.body.timestamp,
             ride_status: 'ongoing',
         });
+
         if (!parseResult.success) {
             return res.status(400).json({ error: parseResult.error.issues });
         }
-        
+        const request  = getRequest(req.body.ride_id);
 
-        await prisma.$queryRaw`INSERT INTO ride (
-            id, pickup_location, destination, price, customer_id, driver_id, vehicle_id, timestamp, ride_status
+        if (!request) {
+            return res.status(404).json({error: 'Ride request not found'});
+        }
+        
+        if (idToCustomer.get(req.body.ride_id) !== req.body.customer_id) {
+            return res.status(400).json({error: 'Customer ID does not match the ride request'});
+        }
+
+        const insertedRide = await prisma.$queryRaw`INSERT INTO ride (
+        id, pickup_location, destination, price, customer_id, driver_id, vehicle_id, timestamp, ride_status
         ) VALUES (
-            ${req.body.ride_id}::uuid,
-            POINT(${req.body.pickup_lng}, ${req.body.pickup_lat}),
-            POINT(${req.body.dropoff_lng}, ${req.body.dropoff_lat}),
-            ${Number(req.body.price)},
-            ${req.body.customer_id}::uuid,
-            ${req.body.driver_id}::uuid,
-            ${req.body.vehicle_id}::uuid,
-            ${req.body.timestamp}::timestamptz,
-            'ongoing'
+        ${req.body.ride_id}::uuid,
+        POINT(${req.body.pickup_lng}, ${req.body.pickup_lat}),
+        POINT(${req.body.dropoff_lng}, ${req.body.dropoff_lat}),
+        ${Number(req.body.price)},
+        ${req.body.customer_id}::uuid,
+        ${req.body.driver_id}::uuid,
+        ${req.body.vehicle_id}::uuid,
+        ${req.body.timestamp}::timestamptz,
+        'ongoing'
         )`;
 
-
+        const deleted = deleteRequest(req.body.ride_id);
+        if (!deleted) {
+            await prisma.ride.delete({
+            where: { id: req.body.ride_id }
+            });
+            logger.error(`Failed to delete ride request from store after accepting ride: ${req.body.ride_id}`);
+            return res.status(404).json({error: 'Ride request not found'});
+        }
 
     logger.info(`Ride accepted: ${req.body.ride_id} by driver ${req.body.driver_id}`);
     return res.status(201).json({ message: 'Ride created successfully', rideId: req.body.ride_id });
