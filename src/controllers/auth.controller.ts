@@ -73,9 +73,21 @@ export async function login(req: Request, res: Response) {
 	return res.send({ token: token, status: user ? "ready" : "requires-setup" });
 }
 
-export async function oauthGoogleRedirect(req: Request, res: Response) {}
+// export async function passwordConfirmRedirect(req: Request, res: Response) {}
 
-export async function passwordConfirmRedirect(req: Request, res: Response) {}
+export async function getAccountStatus(req: Request, res: Response) {
+	const user = res.locals.user;
+	if (!user) {
+		return res.status(401).json({ error: "User not authenticated" });
+	}
+
+	const found = await prisma.user.count({
+		where: {
+			id: user.id,
+		},
+	});
+	return res.send({ status: found ? "ready" : "requires-setup" });
+}
 
 const formSchema = z.object({
 	fullName: z.string(),
@@ -116,7 +128,6 @@ export async function accountSetup(req: Request, res: Response) {
 			fullname: form.fullName,
 			phone_number: form.phone_number,
 			gender: form.gender,
-			// TODO: id pic & profile pic
 		},
 	});
 
@@ -124,14 +135,12 @@ export async function accountSetup(req: Request, res: Response) {
 		await prisma.driver.create({
 			data: {
 				id: user.id,
-				// TODO: license pic
 			},
 		});
 	} else if (form.role == "customer") {
 		await prisma.customer.create({
 			data: {
 				id: user.id,
-				// TODO: license pic
 			},
 		});
 	}
