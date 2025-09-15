@@ -5,6 +5,7 @@ import { logger } from "./utils/logger";
 import { requestLog } from "./middlewares/logging";
 import profileRoutes from "./routes/profile.routes";
 import userRoutes from "./routes/user.routes";
+import authRoutes from "./routes/auth.routes";
 
 export const app = express();
 
@@ -15,6 +16,7 @@ app.use("/api/profile", profileRoutes);
 
 app.use(express.json());
 
+app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
 const port = +(process.env.PORT || 8000);

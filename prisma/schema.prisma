@@ -39,6 +39,7 @@ model customer {
 model driver {
   id              String           @id @db.Uuid
   user            user             @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "driver_user_fk")
+  id_pic          String? // TODO: in the end, should not be optional
   rejected_driver rejected_driver?
   verified_driver verified_driver?
   waiting_driver  waiting_driver?
@@ -117,12 +118,20 @@ model transaction {
   ride               ride                                    @relation(fields: [ride_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ride")
 }
 
+enum gender {
+  male
+  female
+  nonbinary
+}
+
 model user {
   id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   fullname     String
   email        String
   phone_number String
   profile_pic  String?
+  id_pic       String? // TODO: in the end, should not be optional
+  gender       gender? // TODO: in the end, should not be optional
   admin        admin?
   customer     customer?
   driver       driver?
