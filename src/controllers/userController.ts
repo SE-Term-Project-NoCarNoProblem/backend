@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { Prisma } from '../../generated/prisma';
 
+import { z } from "zod";
+
 export async function getUser(req: Request, res: Response){
     try{
         const userId = req.params.id;
@@ -100,16 +102,37 @@ export async function patchMe(req: Request, res: Response){
             return res.status(401).json({error: 'User not authenticated'});
         }
 
-        const {fullname, email, phone_number, bank_account, favorite_pickup_location, favorite_dropoff_location, ...otherfields } = req.body;
+        const updateUserSchema = z.object({
+            fullname: z.string().min(1).max(100).optional(),
+            email: z.string().email("Invalid email").optional(),
+            phone_number: z.string().regex(/^[0-9]{10,15}$/, "Invalid phone number").optional(),
+            bank_account: z.string().regex(/^[0-9]{8,20}$/, "Invalid bank account").optional(),
+            favorite_pickup_location: z.string().min(3).max(200).optional(),
+            favorite_dropoff_location: z.string().min(3).max(200).optional(),
+        }).strict();
 
-        const allowedFields = ['fullname', 'email', 'phone_number', 'bank_account', 'favorite_pickup_location', 'favorite_dropoff_location'];
-        const invalidFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+		
+        let parsedBody;
+		try {
+		parsedBody = updateUserSchema.parse(req.body);
+		} catch (err: any) {
+		if (err.issues) {
+			const tree = z.treeifyError(err);
+			return res.status(400).json(tree);
+		}
 
-        if(invalidFields.length > 0){
-            return res.status(400).json({
-                error: `Invalid fields: ${invalidFields.join(', ')}. Only ${allowedFields.join(', ')} can be updated.`
-            });
-        }
+		return res.status(400).json({ error: "Invalid input" });
+		}
+
+		// put back to local variables
+        const {
+            fullname,
+            email,
+            phone_number,
+            bank_account,
+            favorite_pickup_location,
+            favorite_dropoff_location
+        } = parsedBody;
 
         //If user is a verified driver after update data change to waiting driver
         const existingUser = await prisma.user.findUnique({
