@@ -6,11 +6,26 @@ import { prisma } from "../lib/prisma";
 
 const cookieAge = 30 * 24 * 60 * 60 * 1000;
 
+const emailPasswordSchema = z.object({
+	email: z.email(),
+	password: z.string().min(8),
+});
+
 export async function register(req: Request, res: Response) {
 	// TODO: for now, assume only password login & no confirmation email
+
+	const {
+		data: form,
+		success,
+		error,
+	} = emailPasswordSchema.safeParse(req.body);
+	if (!success) {
+		return res.status(400).send(z.prettifyError(error));
+	}
+
 	const result = await supabase.auth.signUp({
-		email: req.body.email,
-		password: req.body.password,
+		email: form.email,
+		password: form.password,
 	});
 
 	if (result.error) {
@@ -27,15 +42,19 @@ export async function register(req: Request, res: Response) {
 }
 
 export async function login(req: Request, res: Response) {
-	const email = req.body.email;
-	const password = req.body.password;
+	const {
+		data: form,
+		success,
+		error,
+	} = emailPasswordSchema.safeParse(req.body);
+	if (!success) {
+		return res.status(400).send(z.prettifyError(error));
+	}
 
-	if (!email || !password)
-		return res
-			.status(400)
-			.send({ message: "Username and password must be provided" });
-
-	const result = await supabase.auth.signInWithPassword({ email, password });
+	const result = await supabase.auth.signInWithPassword({
+		email: form.email,
+		password: form.password,
+	});
 
 	if (result.error) {
 		logger.error(result.error.code);
