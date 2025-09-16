@@ -5,6 +5,7 @@ import {
   createRequest as storeCreate,
   deleteRequest as storeDelete,
   nearbyRequests as storeNearby,
+  getAllRequests as storeGetAll,
 } from "../lib/requestStore";
 
 // add distance calc function from utils
@@ -117,4 +118,11 @@ export async function nearbyRequests(req: Request, res: Response) {
   if (Number.isNaN(lat) || Number.isNaN(lng))
     return res.status(400).json({ error: "invalid_coordinates" });
   return res.json(storeNearby(lat, lng, radius));
+}
+
+export async function getAllRequests(req: Request, res: Response) {
+  const requesterId = res.locals.user.id;
+  if (!requesterId) return res.status(401).json({ error: "User not authenticated" });
+
+  return res.json(storeGetAll());
 }

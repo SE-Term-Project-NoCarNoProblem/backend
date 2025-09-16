@@ -3,6 +3,7 @@ import {
   createRequest,
   deleteRequest,
   nearbyRequests,
+  getAllRequests,
 } from "../controllers/request.controller";
 import { auth } from "../middlewares/auth";
 
@@ -16,5 +17,8 @@ router.delete("/:id", auth, deleteRequest);
 
 //3 fetch nearby requests (sorted by distance)
 router.get("/nearby", auth, nearbyRequests);
+
+//4 fetch all requests
+router.get("/", auth, getAllRequests);
 
 export default router;

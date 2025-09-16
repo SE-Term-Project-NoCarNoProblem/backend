@@ -136,3 +136,13 @@ export function nearbyRequests(lat: number, lng: number, radiusM: number) {
   hits.sort((a, b) => a.distance_to_driver_m - b.distance_to_driver_m);
   return hits.slice(0, 50); // 50 nearest for now
 }
+
+export function getAllRequests() {
+  const all: RideRequest[] = [];
+  for (const [, bucket] of byCustomer) {
+    for (const r of bucket.values()) {
+      all.push(r);
+    }
+  }
+  return all;
+}
