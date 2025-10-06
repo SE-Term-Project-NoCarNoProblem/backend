@@ -1,6 +1,6 @@
 {
 	"watch": ["src", ".env"],
 	"ext": "ts",
-	"exec": "node -r @swc-node/register --enable-source-maps src/app.ts",
+	"exec": "esbuild src/app.ts --platform=node --bundle --sourcemap --minify --outdir=build --log-level=silent && node --enable-source-maps build/app.js",
 	"signal": "SIGINT"
 }
