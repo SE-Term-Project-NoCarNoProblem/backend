@@ -1,11 +1,17 @@
 import { Request, Response } from "express";
-import { z, ZodError } from "zod";
+import { set, z, ZodError } from "zod";
 import {
+  getCanceledRequest,
   getIdToCustomerMap,
+  setCanceledRequest,
   createRequest as storeCreate,
   deleteRequest as storeDelete,
   nearbyRequests as storeNearby,
 } from "../lib/requestStore";
+// import { readIdem, rememberIdem } from '../lib/idem';
+import { logger } from '../utils/logger';
+
+
 
 // add distance calc function from utils
 import { haversineM } from "../utils/geo";
@@ -117,4 +123,42 @@ export async function nearbyRequests(req: Request, res: Response) {
   if (Number.isNaN(lat) || Number.isNaN(lng))
     return res.status(400).json({ error: "invalid_coordinates" });
   return res.json(storeNearby(lat, lng, radius));
+}
+
+//DELETE /request/cancel/:id
+export async function customerCancelRequestedRide(req: Request, res: Response) {
+    const customerId = res.locals.user?.id;
+    if (!customerId) return res.status(401).json({ error: "User not authenticated" });
+
+    const rideId = req.params.id;
+    if (!rideId) {
+        return res.status(400).json({ error: 'Ride ID is required' });
+    }
+
+    const wasCanceled = getCanceledRequest(rideId);
+    if (wasCanceled) {
+        return res.status(200).json({ message: 'Ride request already canceled', rideId });
+    } 
+
+    try {
+        //CancelPending
+        // check if the ride request exists and belongs to the customer
+        const idToCustomer = getIdToCustomerMap();
+        if (!idToCustomer.has(rideId)) {
+            return res.status(404).json({ error: 'Ride request not found' });
+        }
+        if (idToCustomer.get(rideId) !== customerId) {
+            return res.status(403).json({ error: 'Can only cancel a user\'s own ride request.' });
+        }
+        const ok = storeDelete(rideId);
+        if (!ok) return res.status(404).json({ error: 'Failed to cancel ride request' });
+        logger.info(`Ride request cancelled: ${rideId} by customer ${customerId}`);
+        // remember that this request ID has been canceled
+        setCanceledRequest(rideId, { rideId, canceledAt: Date.now(), customerId });
+        return res.status(200).json({ message: 'Ride request canceled successfully', rideId }); 
+    } catch (error) {
+        console.error('Error cancelling ride request:', error);
+        logger.error('Error cancelling ride request:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
 }
