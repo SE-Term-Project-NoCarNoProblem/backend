@@ -1,8 +1,9 @@
-import { Router } from 'express';
-import { auth } from '../middlewares/auth';
+import { Router } from "express";
+import { auth } from "../middlewares/auth";
+import { cancelRide } from "../controllers/ride.controller";
 
 const router = Router();
 
-
+router.delete("/rides/:id", auth, cancelRide);
 
 export default router;
