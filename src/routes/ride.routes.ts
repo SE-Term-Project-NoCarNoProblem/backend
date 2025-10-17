@@ -4,6 +4,6 @@ import { cancelRide } from "../controllers/ride.controller";
 
 const router = Router();
 
-router.delete("/rides/:id", auth, cancelRide);
+router.delete("/:id", auth, cancelRide);
 
 export default router;
