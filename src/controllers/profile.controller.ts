@@ -38,7 +38,8 @@ export const uploadProfilePicture = async (req: Request, res: Response) =>{
             .from('profile_pic')
             .upload(filePath, file.buffer, {
                 contentType: 'image/webp',
-                upsert: true
+                upsert: true,
+                
         });
 
         if(uploadError){

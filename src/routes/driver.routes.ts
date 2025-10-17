@@ -3,6 +3,7 @@ import {
 	updateDriverLocation,
 	getDrivers,
 	getNearbyDrivers,
+	viewDriver,
 } from "../controllers/driver.controller";
 import { auth } from "../middlewares/auth";
 
@@ -16,5 +17,6 @@ router.get("/location", auth, getDrivers);
 
 // Get nearby drivers
 router.get("/nearby", getNearbyDrivers);
+router.get("/viewdriver/:rideId",viewDriver);
 
 export default router;
