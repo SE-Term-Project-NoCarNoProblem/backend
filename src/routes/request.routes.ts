@@ -1,9 +1,9 @@
 import { Router } from "express";
 import {
-  createRequest,
-  deleteRequest,
-  nearbyRequests,
-  customerCancelRequestedRide
+	createRequest,
+	deleteRequest,
+	nearbyRequests,
+	cancelRequest,
 } from "../controllers/request.controller";
 import { auth } from "../middlewares/auth";
 
@@ -18,6 +18,6 @@ router.delete("/:id", auth, deleteRequest);
 //3 fetch nearby requests (sorted by distance)
 router.get("/nearby", auth, nearbyRequests);
 
-router.delete("/cancel/:id", auth, customerCancelRequestedRide);
+router.delete("/cancel/:id", auth, cancelRequest);
 
 export default router;
