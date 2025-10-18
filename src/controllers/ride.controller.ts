@@ -3,6 +3,7 @@ import {prisma} from '../lib/prisma';
 import {deleteRequest, getRequest, getIdToCustomerMap } from '../lib/requestStore';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 
 export const rideValidator = z.object({
   id: z.uuid(),
@@ -81,7 +82,11 @@ export async function acceptRide(req: Request, res: Response) {
     logger.info(`Ride accepted: ${req.body.ride_id} by driver ${req.body.driver_id}`);
     return res.status(201).json({ message: 'Ride created successfully', rideId: req.body.ride_id });
 
-    } catch (error) {
+    } catch (error:any) {
+        if (error.code === '23505' || error.message?.includes('duplicate key')){
+            logger.warn(`Ride already accepted: ${req.body.ride_id}`);
+            return res.status(409).json({error: 'Already taken'});
+        }
         console.error('Error accepting ride:', error);
         logger.error('Error accepting ride:', error);
         return res.status(500).json({error: 'Internal server error'});
