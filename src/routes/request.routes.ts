@@ -18,6 +18,6 @@ router.delete("/:id", auth, deleteRequest);
 //3 fetch nearby requests (sorted by distance)
 router.get("/nearby", auth, nearbyRequests);
 
-router.delete("/cancel/:id", auth, cancelRequest);
+router.delete("/:id/cancel", auth, cancelRequest);
 
 export default router;
