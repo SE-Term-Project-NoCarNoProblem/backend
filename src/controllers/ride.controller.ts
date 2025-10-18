@@ -1,10 +1,9 @@
 import {Request, Response} from 'express';
 import {prisma} from '../lib/prisma';
-import {deleteRequest, getRequest, getIdToCustomerMap } from '../lib/requestStore';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
-import { getAcceptedRequest, setAcceptedRequest, getCanceledRequest} from '../lib/requestStore';
+import { deleteRequest, getRequest, reviveRequest, getAcceptedRequest, setAcceptedRequest, getCanceledRequest} from '../lib/requestStore';
 
 export const rideValidator = z.object({
   id: z.uuid(),
@@ -78,6 +77,8 @@ export async function acceptRide(req: Request, res: Response) {
 				.json({ error: "Ride already accepted or cancelled" });
 		}
 
+		setAcceptedRequest(rideId, rideReq);
+
 		const insertedRide = await prisma.$executeRaw`INSERT INTO ride (
         id, pickup_location, destination, price, customer_id, driver_id, vehicle_id, timestamp, ride_status
         ) VALUES (
@@ -93,6 +94,7 @@ export async function acceptRide(req: Request, res: Response) {
         )`;
 
 		if (!insertedRide) {
+      reviveRequest(rideReq);
 			logger.error(
 				`Something went wrong!!!, Failed to insert ride into database: ${rideId}`
 			);
@@ -100,7 +102,6 @@ export async function acceptRide(req: Request, res: Response) {
 		}
 
 		logger.info(`Ride accepted: ${rideId} by driver ${req.body.driver_id}`);
-		setAcceptedRequest(rideId, {rideId, acceptedAt: Date.now(), driverId});
 		return res
 			.status(201)
 			.json({ message: "Ride created successfully", rideId: rideId });

@@ -46,6 +46,13 @@ export function getIdToCustomerMap() {
   return idToCustomer;
 }
 
+export function reviveRequest(rideReq : RideRequest) {
+  idToCustomer.set(rideReq.id, rideReq.customer_id);
+  const bucket = getBucket(rideReq.customer_id);
+  bucket.set(rideReq.id, rideReq);
+  acceptedRequest.delete(rideReq.id);
+}
+
 //get a bucket and create one if there is none that matches the cid
 function getBucket(customerId: string) {
   let b = byCustomer.get(customerId);
