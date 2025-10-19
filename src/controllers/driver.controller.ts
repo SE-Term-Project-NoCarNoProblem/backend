@@ -1,4 +1,4 @@
-import { Request, response, Response } from "express";
+import { Request, Response } from "express";
 import z from "zod";
 import { haversineM } from "../utils/geo";
 import { prisma } from '../lib/prisma';
