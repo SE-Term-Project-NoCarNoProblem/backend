@@ -100,7 +100,7 @@ async function getUserRole(userId: string) {
 // get driver rating
 export const getDriverRating = async (req: Request, res: Response) => {
     const userId = res.locals.user?.id;
-    const { driverId } = req.params; // get driver_id from ride 
+    const { driverId } = req.params; // get driver_id from ride
 
     try {
 		if(!userId){
@@ -148,13 +148,13 @@ export const getDriverRating = async (req: Request, res: Response) => {
     }
 }
 
-// update driver rating 
+// update driver rating
 export const updateDriverRating = async (req: Request, res: Response) => {
 	const userId = res.locals.user?.id;
     const { rideId } = req.params;
   	const { rating } = req.body;
 	try {
-		
+
 		if (!userId) {
 			return res.status(401).json({ error: 'User not authenticated'});
 		}
@@ -174,9 +174,14 @@ export const updateDriverRating = async (req: Request, res: Response) => {
 			return res.status(403).json({ error: "Unauthorized: This ride does not belong to you" });
 		}
 
-		// Can 0 ? 
+		// Can 0 ?
 		if (typeof rating !== "number" || rating < 1 || rating > 5) {
 			return res.status(400).json({error: "Rating must be a number between 1 and 5"})
+		}
+
+		const isRatingNull =  ride.rating === null;
+		if (!isRatingNull) {
+	    return  res.status(400).json({error: "Rating has already been set for this ride"})
 		}
 
 		const updatedRide = await prisma.ride.update({
