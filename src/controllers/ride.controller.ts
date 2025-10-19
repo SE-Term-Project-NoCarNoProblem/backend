@@ -29,7 +29,7 @@ export async function cancelRide(req: Request, res: Response) {
 	try {
 		await prisma.$transaction(
 			async (tx) => {
-				const ride = await prisma.ride.findUnique({
+				const ride = await tx.ride.findUnique({
 					where: { id: rideId },
 				});
 
