@@ -101,8 +101,6 @@ async function getUserRole(userId: string) {
 export const getDriverRating = async (req: Request, res: Response) => {
     const userId = res.locals.user?.id;
     const { driverId } = req.params; // get driver_id from ride 
-	console.log("driverId : ", driverId);
-	console.log("userId : ", userId)
 
     try {
 		if(!userId){
