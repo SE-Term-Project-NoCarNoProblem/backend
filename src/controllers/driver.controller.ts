@@ -155,11 +155,6 @@ export const updateDriverRating = async (req: Request, res: Response) => {
 	const userId = res.locals.user?.id;
     const { rideId } = req.params;
   	const { rating } = req.body;
-	// console.log("userId:", userId);
-	// console.log("rideId:", rideId);
-	// console.log("rating:", rating);
-
-
 	try {
 		
 		if (!userId) {
@@ -168,9 +163,6 @@ export const updateDriverRating = async (req: Request, res: Response) => {
 
 		const role = await getUserRole(userId);
 		const ride = await prisma.ride.findUnique({where: {id : rideId}});
-
-		// console.log("role:", role);
-		// console.log("ride:", ride);
 
 		if (!ride) {
 			return res.status(404).json({error: "Ride not found"});

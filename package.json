@@ -3,7 +3,6 @@
 	"version": "1.0.0",
 	"main": "build/app.js",
 	"scripts": {
-		"bundle": "tsc",
 		"dev": "nodemon",
 		"build": "rimraf build && esbuild src/app.ts --platform=node --bundle --minify --keep-names --outdir=build --outbase=src --sourcemap && copyfiles package.json build",
 		"format": "prettier --write src"
