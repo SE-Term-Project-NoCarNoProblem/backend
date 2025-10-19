@@ -10,7 +10,7 @@ import authRoutes from "./routes/auth.routes";
 import driverRoutes from "./routes/driver.routes";
 import ridesRoutes from "./routes/ride.routes";
 import requestRoutes from "./routes/request.routes";
-
+import customerRoutes from "./routes/customer.routes";
 export const app = express();
 
 app.use(cors());
@@ -36,6 +36,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/drivers", driverRoutes);
 app.use("/api/rides", ridesRoutes);
 app.use("/api/requests", requestRoutes);
+app.use("/api/customers", customerRoutes);
 
 const port = +(process.env.PORT || 8000);
 app.listen(port);
