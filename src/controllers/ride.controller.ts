@@ -34,7 +34,6 @@ export async function cancelRide(req: Request, res: Response) {
 					where: { id: rideId },
 				});
 
-<<<<<<< HEAD
 				if (!ride) {
 					return res.status(404).json({ error: "Ride not found" });
 				}
