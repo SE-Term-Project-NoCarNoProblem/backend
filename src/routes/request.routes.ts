@@ -3,7 +3,6 @@ import {
   createRequest,
   deleteRequest,
   nearbyRequests,
-  customerCancelRequestedRide
 } from "../controllers/request.controller";
 import { auth } from "../middlewares/auth";
 
@@ -17,7 +16,5 @@ router.delete("/:id", auth, deleteRequest);
 
 //3 fetch nearby requests (sorted by distance)
 router.get("/nearby", auth, nearbyRequests);
-
-router.delete("/cancel/:id", auth, customerCancelRequestedRide);
 
 export default router;
