@@ -63,7 +63,6 @@ function getBucket(customerId: string) {
   return b;
 }
 
-
 // Haversine distance (meters)
 function haversineM(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371000;
