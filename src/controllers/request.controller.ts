@@ -7,6 +7,7 @@ import {
 	createRequest as storeCreate,
 	deleteRequest as storeDelete,
 	nearbyRequests as storeNearby,
+	listRequestsByCustomer,
 } from "../lib/requestStore";
 // import { readIdem, rememberIdem } from '../lib/idem';
 import { logger } from "../utils/logger";
@@ -141,6 +142,32 @@ export async function nearbyRequests(req: Request, res: Response) {
 	if (Number.isNaN(lat) || Number.isNaN(lng))
 		return res.status(400).json({ error: "invalid_coordinates" });
 	return res.json(storeNearby(lat, lng, radius));
+}
+
+// GET /requests/me/pending
+export async function myPendingRequests(req: Request, res: Response) {
+	const customerId = res.locals.user?.id;
+	if (!customerId)
+		return res.status(401).json({ error: "User not authenticated" });
+	try {
+		const items = listRequestsByCustomer(customerId).map((r) => ({
+			id: r.id,
+			customer_id: r.customer_id,
+			service: r.service,
+			note_to_driver: r.note_to_driver ?? null,
+			fare: r.fare ?? null,
+			distance_m: r.distance_m ?? null,
+			requested_at: r.requested_at,
+			pickup_lng: r.pickup.lng,
+			pickup_lat: r.pickup.lat,
+			dropoff_lng: r.dropoff.lng,
+			dropoff_lat: r.dropoff.lat,
+		}));
+		return res.json(items[0]);
+	} catch (err) {
+		logger.error("Error fetching my pending requests", err);
+		return res.status(500).json({ error: "server_error" });
+	}
 }
 
 //DELETE /request/cancel/:id
