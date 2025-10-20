@@ -1,8 +1,9 @@
 import {Request, Response} from 'express';
 import {prisma} from '../lib/prisma';
-import {deleteRequest, getRequest, getIdToCustomerMap } from '../lib/requestStore';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
+import { deleteRequest, getRequest, reviveRequest, getAcceptedRequest, setAcceptedRequest, getCanceledRequest} from '../lib/requestStore';
 
 export const rideValidator = z.object({
   id: z.uuid(),
@@ -18,116 +19,99 @@ export const rideValidator = z.object({
   ride_status: z.enum(['ongoing', 'completed', 'cancelled']),
 });
 
-
-
-
+//POST /rides/:id/accept
+//body: { vehicle_id: string }
 export async function acceptRide(req: Request, res: Response) {
-    try {
+	try {
+		const driverId = res.locals.user?.id;
+		const rideId = req.params.id;
+		if (!driverId)
+			return res.status(401).json({ error: "User not authenticated" });
 
-        const driverId = res.locals.user?.id;
-        if (!driverId) return res.status(401).json({ error: "User not authenticated" });
-        
-        const parseResult = rideValidator.safeParse({
-            id: req.body.ride_id,
-            pickup_lat: Number(req.body.pickup_lat),
-            pickup_lng: Number(req.body.pickup_lng),
-            dropoff_lat: Number(req.body.dropoff_lat),
-            dropoff_lng: Number(req.body.dropoff_lng),
-            price: Number(req.body.price),
-            customer_id: req.body.customer_id,
-            driver_id: driverId,
-            vehicle_id: req.body.vehicle_id,
-            timestamp: req.body.timestamp,
-            ride_status: 'ongoing',
-        });
+		const rideReq = getRequest(rideId);
+		if (!rideReq) {
+		  const wasAccepted = getAcceptedRequest(rideId);
+			if (wasAccepted) {
+			  return res
+          .status(409)
+          .json({ error: "Ride already accepted"});
+      }
+      const wasCanceled = getCanceledRequest(rideId);
+      if (wasCanceled) {
+        return res
+          .status(409)
+          .json({ error: "Ride request was canceled"});
+      }
+			return res
+				.status(409)
+				.json({
+					error: "Ride request not found",
+				});
+		}
 
-        if (!parseResult.success) {
-            return res.status(400).json({ error: parseResult.error.issues });
-        }
-        const request  = getRequest(req.body.ride_id);
+		const parseResult = rideValidator.safeParse({
+			id: rideId,
+			pickup_lat: Number(rideReq.pickup.lat),
+			pickup_lng: Number(rideReq.pickup.lng),
+			dropoff_lat: Number(rideReq.dropoff.lat),
+			dropoff_lng: Number(rideReq.dropoff.lng),
+			price: Number(rideReq.fare),
+			customer_id: rideReq.customer_id,
+			driver_id: driverId,
+			vehicle_id: req.body.vehicle_id,
+			timestamp: new Date(),
+			ride_status: "ongoing",
+		});
 
-        if (!request) {
-            return res.status(404).json({error: 'Ride request not found'});
-        }
-        
-        const idToCustomer = getIdToCustomerMap();
-        if (idToCustomer.get(req.body.ride_id) !== req.body.customer_id) {
-            return res.status(400).json({error: 'Customer ID does not match the ride request'});
-        }
+		if (!parseResult.success) {
+			return res.status(400).json({ error: parseResult.error.issues });
+		}
 
-        const insertedRide = await prisma.$queryRaw`INSERT INTO ride (
+		const deleted = deleteRequest(rideId);
+		if (!deleted) {
+			logger.error(
+				`Failed to delete ride request from store after accepting ride: ${rideId}`
+			);
+			return res
+				.status(409)
+				.json({ error: "Ride already accepted or cancelled" });
+		}
+
+		setAcceptedRequest(rideId, rideReq);
+
+		const insertedRide = await prisma.$executeRaw`INSERT INTO ride (
         id, pickup_location, destination, price, customer_id, driver_id, vehicle_id, timestamp, ride_status
         ) VALUES (
-        ${req.body.ride_id}::uuid,
-        POINT(${req.body.pickup_lng}, ${req.body.pickup_lat}),
-        POINT(${req.body.dropoff_lng}, ${req.body.dropoff_lat}),
-        ${Number(req.body.price)},
-        ${req.body.customer_id}::uuid,
+        ${rideId}::uuid,
+        POINT(${rideReq.pickup.lng}, ${rideReq.pickup.lat}),
+        POINT(${rideReq.dropoff.lng}, ${rideReq.dropoff.lat}),
+        ${Number(rideReq.fare)},
+        ${rideReq.customer_id}::uuid,
         ${driverId}::uuid,
         ${req.body.vehicle_id}::uuid,
-        ${req.body.timestamp}::timestamptz,
+        NOW(),
         'ongoing'
         )`;
 
-        const deleted = deleteRequest(req.body.ride_id);
-        if (!deleted) {
-            await prisma.ride.delete({
-            where: { id: req.body.ride_id }
-            });
-            logger.error(`Failed to delete ride request from store after accepting ride: ${req.body.ride_id}`);
-            return res.status(404).json({error: 'Ride request not found'});
-        }
+		if (!insertedRide) {
+      reviveRequest(rideReq);
+			logger.error(
+				`Something went wrong!!!, Failed to insert ride into database: ${rideId}`
+			);
+			return res.status(500).json({ error: "Internal server error" });
+		}
 
-    logger.info(`Ride accepted: ${req.body.ride_id} by driver ${req.body.driver_id}`);
-    return res.status(201).json({ message: 'Ride created successfully', rideId: req.body.ride_id });
-
-    } catch (error:any) {
-        if (error.code === '23505' || error.message?.includes('duplicate key')){
-            logger.warn(`Ride already accepted: ${req.body.ride_id}`);
-            return res.status(409).json({error: 'Already taken'});
-        }
-        console.error('Error accepting ride:', error);
-        logger.error('Error accepting ride:', error);
-        return res.status(500).json({error: 'Internal server error'});
-    }
-}
-
-
-export async function cancelRide(req: Request, res: Response) {
-    try {
-        const rideId = req.params.id;
-        if (!rideId) {
-            return res.status(400).json({ error: 'Ride ID is required' });
-        }
-        const driverId = res.locals.user?.id;
-        if (!driverId) return res.status(401).json({ error: "User not authenticated" });
-
-        //check if the ride exists and belongs to the driver
-        const ride = await prisma.ride.findUnique({
-            where: { id: rideId },
-        });
-        if (!ride) {
-            return res.status(404).json({ error: 'Ride not found' });
-        }
-        if (ride.driver_id !== driverId) {
-            return res.status(403).json({ error: `DriverId = ${driverId} is not authorized to cancel this ride` });
-        }
-
-        const result = await prisma.ride.update({
-            where: { id: rideId },
-            data: { ride_status: 'canceled' },
-        })
-
-        if (!result) {
-            return res.status(404).json({ error: 'Ride not found' });
-        }
-
-        logger.info(`Ride cancelled: ${rideId}`);
-        return res.status(200).json({ message: 'Ride cancelled successfully' });
-
-    } catch (error) {
-        console.error('Error cancelling ride:', error);
-        logger.error('Error cancelling ride:', error);
-        return res.status(500).json({ error: 'Internal server error' });
-    }
+		logger.info(`Ride accepted: ${rideId} by driver ${req.body.driver_id}`);
+		return res
+			.status(201)
+			.json({ message: "Ride created successfully", rideId: rideId });
+	} catch (error: any) {
+		if (error.code === "23505" || error.message?.includes("duplicate key")) {
+			logger.warn(`Ride already accepted: ${req.params.id}`);
+			return res.status(409).json({ error: "Already taken" });
+		}
+		console.error("Error accepting ride:", error);
+		logger.error("Error accepting ride:", error);
+		return res.status(500).json({ error: "Internal server error" });
+	}
 }
