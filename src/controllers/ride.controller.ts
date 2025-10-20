@@ -1,9 +1,16 @@
-import {Request, Response} from 'express';
-import {prisma} from '../lib/prisma';
-import { logger } from '../utils/logger';
-import { z } from 'zod';
-import { Prisma } from '@prisma/client';
-import { deleteRequest, getRequest, reviveRequest, getAcceptedRequest, setAcceptedRequest, getCanceledRequest} from '../lib/requestStore';
+import { Request, Response } from "express";
+import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
+import { z } from "zod";
+import { Prisma } from "@prisma/client";
+import {
+	deleteRequest,
+	getRequest,
+	reviveRequest,
+	getAcceptedRequest,
+	setAcceptedRequest,
+	getCanceledRequest,
+} from "../lib/requestStore";
 
 export const rideValidator = z.object({
 	id: z.uuid(),
@@ -14,13 +21,13 @@ export const rideValidator = z.object({
 	price: z.number(),
 	customer_id: z.uuid(),
 	driver_id: z.uuid(),
-	vehicle_id: z.uuid(),
+	// vehicle_id: z.uuid(),
 	timestamp: z.string().or(z.date()),
 	ride_status: z.enum(["ongoing", "completed", "canceled"]),
 });
 
-//POST /rides/:id/accept
-//body: { vehicle_id: string }
+// POST /rides/:id/accept
+// Note: vehicle_id is derived from the first vehicle owned by the authenticated driver
 export async function acceptRide(req: Request, res: Response) {
 	try {
 		const driverId = res.locals.user?.id;
@@ -30,23 +37,29 @@ export async function acceptRide(req: Request, res: Response) {
 
 		const rideReq = getRequest(rideId);
 		if (!rideReq) {
-		  const wasAccepted = getAcceptedRequest(rideId);
+			const wasAccepted = getAcceptedRequest(rideId);
 			if (wasAccepted) {
-			  return res
-          .status(409)
-          .json({ error: "Ride already accepted"});
-      }
-      const wasCanceled = getCanceledRequest(rideId);
-      if (wasCanceled) {
-        return res
-          .status(409)
-          .json({ error: "Ride request was canceled"});
-      }
+				return res.status(409).json({ error: "Ride already accepted" });
+			}
+			const wasCanceled = getCanceledRequest(rideId);
+			if (wasCanceled) {
+				return res.status(409).json({ error: "Ride request was canceled" });
+			}
+			return res.status(409).json({
+				error: "Ride request not found",
+			});
+		}
+
+		// Fetch driver's vehicle (use the first one found)
+		const vehicle = await prisma.vehicle.findFirst({
+			where: { driver_id: driverId },
+			select: { id: true },
+		});
+
+		if (!vehicle) {
 			return res
-				.status(409)
-				.json({
-					error: "Ride request not found",
-				});
+				.status(400)
+				.json({ error: "Driver has no registered vehicle" });
 		}
 
 		const parseResult = rideValidator.safeParse({
@@ -58,7 +71,7 @@ export async function acceptRide(req: Request, res: Response) {
 			price: Number(rideReq.fare),
 			customer_id: rideReq.customer_id,
 			driver_id: driverId,
-			vehicle_id: req.body.vehicle_id,
+			vehicle_id: vehicle.id,
 			timestamp: new Date(),
 			ride_status: "ongoing",
 		});
@@ -88,20 +101,22 @@ export async function acceptRide(req: Request, res: Response) {
         ${Number(rideReq.fare)},
         ${rideReq.customer_id}::uuid,
         ${driverId}::uuid,
-        ${req.body.vehicle_id}::uuid,
+		${vehicle.id}::uuid,
         NOW(),
         'ongoing'
         )`;
 
 		if (!insertedRide) {
-      reviveRequest(rideReq);
+			reviveRequest(rideReq);
 			logger.error(
 				`Something went wrong!!!, Failed to insert ride into database: ${rideId}`
 			);
 			return res.status(500).json({ error: "Internal server error" });
 		}
 
-		logger.info(`Ride accepted: ${rideId} by driver ${req.body.driver_id}`);
+		logger.info(
+			`Ride accepted: ${rideId} by driver ${driverId} with vehicle ${vehicle.id}`
+		);
 		return res
 			.status(201)
 			.json({ message: "Ride created successfully", rideId: rideId });
@@ -156,7 +171,7 @@ export async function cancelRide(req: Request, res: Response) {
 
 		logger.info(`Ride cancelled: ${rideId} by user ${userId}`);
 		return res.status(200).json({ message: "Ride cancelled successfully" });
-	} catch (error) {
+	} catch (error: any) {
 		if (error.code === "P2034") {
 			const ride = await prisma.ride.findUnique({
 				where: { id: rideId },

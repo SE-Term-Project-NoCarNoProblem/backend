@@ -5,7 +5,7 @@ import {
 	nearbyRequests,
 	cancelRequest,
 	calculateFareEndpoint,
-	myPendingRequests,
+	myActiveRequests,
 } from "../controllers/request.controller";
 import { auth } from "../middlewares/auth";
 
@@ -24,7 +24,7 @@ router.delete("/:id/cancel", auth, cancelRequest);
 
 router.get("/fare", calculateFareEndpoint);
 
-// get my pending ride requests
-router.get("/me/pending", auth, myPendingRequests);
+// get my active ride requests (pending in cache or ongoing in database)
+router.get("/me/active", auth, myActiveRequests);
 
 export default router;

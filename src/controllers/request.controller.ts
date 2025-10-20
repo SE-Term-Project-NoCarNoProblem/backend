@@ -144,13 +144,14 @@ export async function nearbyRequests(req: Request, res: Response) {
 	return res.json(storeNearby(lat, lng, radius));
 }
 
-// GET /requests/me/pending
-export async function myPendingRequests(req: Request, res: Response) {
+// GET /requests/me/active
+export async function myActiveRequests(req: Request, res: Response) {
 	const customerId = res.locals.user?.id;
 	if (!customerId)
 		return res.status(401).json({ error: "User not authenticated" });
 	try {
-		const items = listRequestsByCustomer(customerId).map((r) => ({
+		// Fetch pending requests from cache (waiting for driver to accept)
+		const pendingRequests = listRequestsByCustomer(customerId).map((r) => ({
 			id: r.id,
 			customer_id: r.customer_id,
 			service: r.service,
@@ -162,10 +163,57 @@ export async function myPendingRequests(req: Request, res: Response) {
 			pickup_lat: r.pickup.lat,
 			dropoff_lng: r.dropoff.lng,
 			dropoff_lat: r.dropoff.lat,
+			status: "pending" as const,
 		}));
-		return res.json(items[0]);
+
+		// Fetch ongoing rides from database
+		const { prisma } = await import("../lib/prisma");
+		const ongoingRides = await prisma.$queryRaw<
+			Array<{
+				id: string;
+				customer_id: string;
+				driver_id: string;
+				vehicle_id: string;
+				price: number;
+				timestamp: Date;
+				ride_status: string;
+				pickup_lng: number;
+				pickup_lat: number;
+				dropoff_lng: number;
+				dropoff_lat: number;
+			}>
+		>`
+			SELECT 
+				id, customer_id, driver_id, vehicle_id, price, timestamp, ride_status,
+				ST_X(pickup_location::geometry) as pickup_lng,
+				ST_Y(pickup_location::geometry) as pickup_lat,
+				ST_X(destination::geometry) as dropoff_lng,
+				ST_Y(destination::geometry) as dropoff_lat
+			FROM ride
+			WHERE customer_id = ${customerId}::uuid
+			AND ride_status = 'ongoing'
+		`;
+
+		const ongoingRidesFormatted = ongoingRides.map((ride) => ({
+			id: ride.id,
+			customer_id: ride.customer_id,
+			driver_id: ride.driver_id,
+			vehicle_id: ride.vehicle_id,
+			fare: ride.price,
+			timestamp: ride.timestamp,
+			pickup_lng: ride.pickup_lng,
+			pickup_lat: ride.pickup_lat,
+			dropoff_lng: ride.dropoff_lng,
+			dropoff_lat: ride.dropoff_lat,
+			status: "ongoing" as const,
+		}));
+
+		// Combine both pending and ongoing
+		const allActiveRequests = [...pendingRequests, ...ongoingRidesFormatted];
+
+		return res.json(allActiveRequests);
 	} catch (err) {
-		logger.error("Error fetching my pending requests", err);
+		logger.error("Error fetching my active requests", err);
 		return res.status(500).json({ error: "server_error" });
 	}
 }
