@@ -4,6 +4,7 @@ import {
 	deleteRequest,
 	nearbyRequests,
 	cancelRequest,
+	calculateFareEndpoint,
 } from "../controllers/request.controller";
 import { auth } from "../middlewares/auth";
 
@@ -19,5 +20,7 @@ router.delete("/:id", auth, deleteRequest);
 router.get("/nearby", auth, nearbyRequests);
 
 router.delete("/:id/cancel", auth, cancelRequest);
+
+router.get("/fare", calculateFareEndpoint);
 
 export default router;

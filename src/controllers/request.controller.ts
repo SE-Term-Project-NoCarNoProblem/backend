@@ -54,6 +54,22 @@ function calculateFare(distanceM: number): number {
 	return Math.round(fare);
 } // calculate based on real thai taxi rate
 
+export function calculateFareEndpoint(req: Request, res: Response) {
+	const distanceM = Math.round(
+		haversineM(
+			Number(req.query.pickup_lat),
+			Number(req.query.pickup_lng),
+			Number(req.query.dropoff_lat),
+			Number(req.query.dropoff_lng)
+		)
+	);
+	if (Number.isNaN(distanceM) || distanceM < 0) {
+		return res.status(400).json({ error: "invalid_distance" });
+	}
+	const fare = calculateFare(distanceM);
+	return res.json({ distance_m: distanceM, fare_baht: fare });
+}
+
 export async function createRequest(req: Request, res: Response) {
 	const customer_id = res.locals.user?.id;
 	if (!customer_id)
