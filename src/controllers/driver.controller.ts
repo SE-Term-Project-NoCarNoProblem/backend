@@ -3,6 +3,7 @@ import z from "zod";
 import { haversineM } from "../utils/geo";
 import { Server, Socket } from "socket.io";
 import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
 
 // In-memory storage
 const driverLocations = new Map<string, [number, number]>();
@@ -20,8 +21,8 @@ const nearbyQuerySchema = z.object({
 
 // TODO: auth for socket io
 
-export function removeDriverPosition(socket: Socket) {
-	const driverId = socket.data.driverId;
+export function removeDriverPosition(driverId: string) {
+	logger.debug(`Removing driver position for socket ${driverId}`);
 	if (driverId && driverLocations.has(driverId)) {
 		driverLocations.delete(driverId);
 	}
@@ -41,11 +42,13 @@ export function broadcastDriverPositions(io: Server) {
 export function registerDriverEvents(socket: Socket) {
 	socket.on("position:submit_driver_position", (data) => {
 		console.log(data);
-		driverLocations.set(data.user_id, data.position);
-		console.log(`Driver ${data.driverId} position updated to ${data.position}`);
+		driverLocations.set(socket.data.user_id, data.position);
+		console.log(
+			`Driver ${socket.data.user_id} position updated to ${data.position}`
+		);
 	});
-	socket.on("disconnect", () => {
-		removeDriverPosition(socket);
+	socket.on("disconnect", (data) => {
+		removeDriverPosition(socket.data.user_id);
 	});
 }
 
