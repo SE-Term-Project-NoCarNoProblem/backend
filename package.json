@@ -20,7 +20,7 @@
 	"description": "",
 	"dependencies": {
 		"@prisma/client": "^6.15.0",
-		"@supabase/supabase-js": "^2.56.1",
+		"@supabase/supabase-js": "^2.75.1",
 		"@types/cors": "^2.8.19",
 		"@types/multer": "^2.0.0",
 		"cors": "^2.8.5",
