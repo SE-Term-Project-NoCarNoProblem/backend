@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { LRUCache } from "lru-cache";
 
 export type RideRequest = {
   id: string;
@@ -22,8 +23,34 @@ export type RideRequest = {
 const byCustomer = new Map<string, Map<string, RideRequest>>();
 const idToCustomer = new Map<string, string>();
 
+const acceptedRequest = new LRUCache<string, any>({max:5000,ttl:1000*60*60});
+const canceledRequests = new LRUCache<string, any>({max:5000,ttl:1000*60*60}); // 1 hour ttl, max 5000 entries
+
+export function getCanceledRequest(id: string) {
+  return canceledRequests.get(id);
+}
+
+export function setCanceledRequest(id: string | undefined, value: any) {
+  if (id) canceledRequests.set(id, value);
+}
+
+export function getAcceptedRequest(id :string) {
+  return acceptedRequest.get(id);
+}
+
+export function setAcceptedRequest(id: string, data: any) {
+  if (id) acceptedRequest.set(id, data);
+}
+
 export function getIdToCustomerMap() {
   return idToCustomer;
+}
+
+export function reviveRequest(rideReq : RideRequest) {
+  idToCustomer.set(rideReq.id, rideReq.customer_id);
+  const bucket = getBucket(rideReq.customer_id);
+  bucket.set(rideReq.id, rideReq);
+  acceptedRequest.delete(rideReq.id);
 }
 
 //get a bucket and create one if there is none that matches the cid

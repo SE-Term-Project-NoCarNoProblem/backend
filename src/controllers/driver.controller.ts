@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import z from "zod";
 import { haversineM } from "../utils/geo";
 import { Server, Socket } from "socket.io";
+import { prisma } from "../lib/prisma";
 
 // In-memory storage
 const driverLocations = new Map<string, [number, number]>();
@@ -119,4 +120,189 @@ export const getNearbyDrivers = (req: Request, res: Response) => {
 
 	hits.sort((a, b) => a.distance_m - b.distance_m);
 	return res.json(hits.slice(0, 50));
+};
+
+export const viewDriver = async (req: Request, res: Response) => {
+	try {
+		const rideId = req.params.rideId;
+
+		if (!rideId) {
+			return res.status(400).json({ error: "Ride ID is required" });
+		}
+
+		const data = await prisma.ride.findUnique({
+			where: {
+				id: rideId,
+			},
+			select: {
+				rating: true,
+				verified_driver: {
+					select: {
+						vehicle: {
+							select: {
+								model: true,
+								registration: true,
+							},
+						},
+						driver: {
+							select: {
+								user: {
+									select: {
+										fullname: true,
+										email: true,
+										phone_number: true,
+										age: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		});
+
+		if (!data) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		res.json({
+			success: true,
+			data: data,
+		});
+	} catch (error) {
+		console.log("Error in viewDriver controller:", error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+};
+
+// get user roles
+async function getUserRole(userId: string) {
+	const isDriver = await prisma.driver.findUnique({ where: { id: userId } });
+	if (isDriver) return "DRIVER";
+
+	const isCustomer = await prisma.customer.findUnique({
+		where: { id: userId },
+	});
+	if (isCustomer) return "CUSTOMER";
+
+	const isAdmin = await prisma.admin.findUnique({ where: { id: userId } });
+	if (isAdmin) return "ADMIN";
+
+	const isSupport = await prisma.support.findUnique({ where: { id: userId } });
+	if (isSupport) return "SUPPORT";
+
+	return "UNKNOWN";
+}
+
+// get driver rating
+export const getDriverRating = async (req: Request, res: Response) => {
+	const userId = res.locals.user?.id;
+	const { driverId } = req.params; // get driver_id from ride
+
+	try {
+		if (!userId) {
+			return res.status(401).json({ error: "User not authenticated" });
+		}
+
+		const role = await getUserRole(userId);
+
+		let targetDriverId;
+		if (role === "DRIVER") {
+			targetDriverId = userId;
+		} else if (role === "CUSTOMER" || role === "ADMIN" || role === "SUPPORT") {
+			targetDriverId = driverId;
+		} else {
+			return res.status(403).json({ error: "Unauthorized access" });
+		}
+
+		if (!targetDriverId) {
+			return res.status(400).json({ error: "Missing driver ID" });
+		}
+
+		const result = await prisma.ride.aggregate({
+			_avg: { rating: true },
+			_count: { rating: true },
+			where: {
+				driver_id: targetDriverId,
+				rating: { not: null },
+			},
+		});
+
+		const hasRating = result._count.rating > 0;
+		const averageRating =
+			hasRating && result._avg.rating !== null
+				? Number(result._avg.rating.toFixed(2))
+				: null;
+
+		res.json({
+			viewer_id: userId,
+			driver_id: targetDriverId,
+			average_rating: hasRating ? "⭐ " + String(averageRating) : null,
+			total_rated_rides: result._count.rating,
+			message: hasRating ? null : "No ratings yet",
+		});
+	} catch (error) {
+		console.error("Error fetching driver rating:", error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+};
+
+// update driver rating
+export const updateDriverRating = async (req: Request, res: Response) => {
+	const userId = res.locals.user?.id;
+	const { rideId } = req.params;
+	const { rating } = req.body;
+	try {
+		if (!userId) {
+			return res.status(401).json({ error: "User not authenticated" });
+		}
+
+		const role = await getUserRole(userId);
+		const ride = await prisma.ride.findUnique({ where: { id: rideId } });
+
+		if (!ride) {
+			return res.status(404).json({ error: "Ride not found" });
+		}
+
+		if (role === "DRIVER" || role === "UNKNOWN") {
+			return res
+				.status(403)
+				.json({ error: "Driver cannot update their own rating." });
+		}
+
+		if (role === "CUSTOMER" && ride.customer_id != userId) {
+			return res
+				.status(403)
+				.json({ error: "Unauthorized: This ride does not belong to you" });
+		}
+
+		// Can 0 ?
+		if (typeof rating !== "number" || rating < 1 || rating > 5) {
+			return res
+				.status(400)
+				.json({ error: "Rating must be a number between 1 and 5" });
+		}
+
+		const isRatingNull = ride.rating === null;
+		if (!isRatingNull) {
+			return res
+				.status(400)
+				.json({ error: "Rating has already been set for this ride" });
+		}
+
+		const updatedRide = await prisma.ride.update({
+			where: { id: rideId },
+			data: { rating },
+		});
+
+		res.json({
+			message: role + " updated rating successfully",
+			ride_id: updatedRide.id,
+			driver_id: updatedRide.driver_id,
+			rating: updatedRide.rating,
+		});
+	} catch (error) {
+		console.log("Error updating driver rating", error);
+		res.status(500).json({ error: "Internal server error" });
+	}
 };
