@@ -81,6 +81,7 @@ model ride {
   timestamp                                DateTime             @db.Timestamptz(6)
   rating                                   Int?
   ride_status                              ride_status
+  ride_progress_status                     ride_progress_status @default(accepted)
   chat_log                                 chat_log[]
   customer                                 customer             @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "customer")
   verified_driver                          verified_driver      @relation(fields: [driver_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ride_verified_driver_fk")
@@ -179,6 +180,14 @@ enum ride_status {
   ongoing
   completed
   canceled
+}
+
+enum ride_progress_status {
+  accepted
+  on_the_way
+  arrived
+  picked_up
+  completed
 }
 
 enum transaction_status {
