@@ -15,6 +15,7 @@ import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import {
 	broadcastDriverPositions,
+	getDriverPositions,
 	registerDriverEvents,
 	removeDriverPosition,
 } from "./controllers/driver.controller";
@@ -66,11 +67,12 @@ io.on("connection", (socket) => {
 	logger.debug(`Client connected, now ${io.engine.clientsCount}`);
 	registerGeneralEvents(socket);
 	registerDriverEvents(socket);
+	socket.emit("position:driver_positions", getDriverPositions());
 });
 
 setInterval(() => {
 	broadcastDriverPositions(io);
-}, 3000);
+}, 1000);
 
 const port = +(process.env.PORT || 8000);
 httpServer.listen(port);

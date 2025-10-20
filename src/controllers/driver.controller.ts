@@ -28,15 +28,21 @@ export function removeDriverPosition(driverId: string) {
 	}
 }
 
+export function getDriverPositions() {
+	return Array.from(driverLocations.entries()).map(([id, [lat, lng]]) => ({
+		driver_id: id,
+		lat,
+		lng,
+	}));
+}
+
+let previousBroadcast = "";
 export function broadcastDriverPositions(io: Server) {
-	io.emit(
-		"position:driver_positions",
-		Array.from(driverLocations.entries()).map(([id, [lat, lng]]) => ({
-			driver_id: id,
-			lat,
-			lng,
-		}))
-	);
+	const data = getDriverPositions();
+	if (previousBroadcast !== JSON.stringify(data)) {
+		io.emit("position:driver_positions", data);
+	}
+	previousBroadcast = JSON.stringify(data);
 }
 
 export function registerDriverEvents(socket: Socket) {
@@ -46,6 +52,9 @@ export function registerDriverEvents(socket: Socket) {
 		console.log(
 			`Driver ${socket.data.user_id} position updated to ${data.position}`
 		);
+	});
+	socket.on("position:remove_driver_position", (data) => {
+		removeDriverPosition(socket.data.user_id);
 	});
 	socket.on("disconnect", (data) => {
 		removeDriverPosition(socket.data.user_id);
