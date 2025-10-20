@@ -12,6 +12,11 @@ import ridesRoutes from "./routes/ride.routes";
 import requestRoutes from "./routes/request.routes";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
+import {
+	broadcastDriverPositions,
+	registerDriverEvents,
+	removeDriverPosition,
+} from "./controllers/driver.controller";
 
 const app = express();
 
@@ -42,13 +47,13 @@ app.use("/api/requests", requestRoutes);
 // ---------- socket io ----------
 const httpServer = createServer(app);
 export const io = new Server(httpServer, {
-	path: "/",
+	// path: "/",
 	cors: {
 		origin: "*",
 	},
 });
 
-function registerSocketClientEvents(socket: Socket) {
+function registerGeneralEvents(socket: Socket) {
 	socket.on("disconnect", () => {
 		logger.debug(`Client disconnected, now ${io.engine.clientsCount}`);
 	});
@@ -56,8 +61,13 @@ function registerSocketClientEvents(socket: Socket) {
 
 io.on("connection", (socket) => {
 	logger.debug(`Client connected, now ${io.engine.clientsCount}`);
-	registerSocketClientEvents(socket);
+	registerGeneralEvents(socket);
+	registerDriverEvents(socket);
 });
+
+setInterval(() => {
+	broadcastDriverPositions(io);
+}, 3000);
 
 const port = +(process.env.PORT || 8000);
 httpServer.listen(port);

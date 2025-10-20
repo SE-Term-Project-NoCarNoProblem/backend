@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import z from "zod";
 import { haversineM } from "../utils/geo";
+import { Server, Socket } from "socket.io";
 
 // In-memory storage
 const driverLocations = new Map<string, [number, number]>();
@@ -11,10 +12,41 @@ const locationSchema = z.object({
 });
 
 const nearbyQuerySchema = z.object({
-  lat: z.coerce.number().min(-90).max(90),
-  lng: z.coerce.number().min(-180).max(180),
-  radius_m: z.coerce.number().int().min(50).max(5000).default(3000), // 3 km radius
+	lat: z.coerce.number().min(-90).max(90),
+	lng: z.coerce.number().min(-180).max(180),
+	radius_m: z.coerce.number().int().min(50).max(5000).default(3000), // 3 km radius
 });
+
+// TODO: auth for socket io
+
+export function removeDriverPosition(socket: Socket) {
+	const driverId = socket.data.driverId;
+	if (driverId && driverLocations.has(driverId)) {
+		driverLocations.delete(driverId);
+	}
+}
+
+export function broadcastDriverPositions(io: Server) {
+	io.emit(
+		"position:driver_positions",
+		Array.from(driverLocations.entries()).map(([id, [lat, lng]]) => ({
+			driver_id: id,
+			lat,
+			lng,
+		}))
+	);
+}
+
+export function registerDriverEvents(socket: Socket) {
+	socket.on("position:submit_driver_position", (data) => {
+		console.log(data);
+		driverLocations.set(data.user_id, data.position);
+		console.log(`Driver ${data.driverId} position updated to ${data.position}`);
+	});
+	socket.on("disconnect", () => {
+		removeDriverPosition(socket);
+	});
+}
 
 export const updateDriverLocation = async (req: Request, res: Response) => {
 	try {
@@ -57,23 +89,34 @@ export const getDrivers = (req: Request, res: Response) => {
 	return res.json(Object.fromEntries(driverLocations.entries()));
 };
 
-
 export const getNearbyDrivers = (req: Request, res: Response) => {
-  const parsed = nearbyQuerySchema.safeParse(req.query);
-  if (!parsed.success) {
-    return res.status(400).json({ error: "validation_error", issues: parsed.error.issues });
-  }
-  const { lat, lng, radius_m } = parsed.data;
+	const parsed = nearbyQuerySchema.safeParse(req.query);
+	if (!parsed.success) {
+		return res
+			.status(400)
+			.json({ error: "validation_error", issues: parsed.error.issues });
+	}
+	const { lat, lng, radius_m } = parsed.data;
 
-  const hits: Array<{ driver_id: string; lat: number; lng: number; distance_m: number }> = [];
+	const hits: Array<{
+		driver_id: string;
+		lat: number;
+		lng: number;
+		distance_m: number;
+	}> = [];
 
-  for (const [id, [dLat, dLng]] of driverLocations.entries()) {
-    const d = haversineM(lat, lng, dLat, dLng);
-    if (d <= radius_m) {
-      hits.push({ driver_id: id, lat: dLat, lng: dLng, distance_m: Math.round(d) });
-    }
-  }
+	for (const [id, [dLat, dLng]] of driverLocations.entries()) {
+		const d = haversineM(lat, lng, dLat, dLng);
+		if (d <= radius_m) {
+			hits.push({
+				driver_id: id,
+				lat: dLat,
+				lng: dLng,
+				distance_m: Math.round(d),
+			});
+		}
+	}
 
-  hits.sort((a, b) => a.distance_m - b.distance_m);
-  return res.json(hits.slice(0, 50));
+	hits.sort((a, b) => a.distance_m - b.distance_m);
+	return res.json(hits.slice(0, 50));
 };
