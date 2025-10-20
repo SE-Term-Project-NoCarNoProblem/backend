@@ -18,6 +18,7 @@ import {
 	registerDriverEvents,
 	removeDriverPosition,
 } from "./controllers/driver.controller";
+import { authSocket } from "./middlewares/auth";
 
 const app = express();
 
@@ -49,11 +50,11 @@ app.use("/api/customers", customerRoutes);
 // ---------- socket io ----------
 const httpServer = createServer(app);
 export const io = new Server(httpServer, {
-	// path: "/",
 	cors: {
 		origin: "*",
 	},
 });
+io.use(authSocket);
 
 function registerGeneralEvents(socket: Socket) {
 	socket.on("disconnect", () => {
