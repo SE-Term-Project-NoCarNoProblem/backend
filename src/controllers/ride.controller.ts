@@ -135,6 +135,11 @@ export async function acceptRide(req: Request, res: Response) {
 			progress_status: "accepted",
 		});
 
+		io.emit("request:accepted", {
+			id: rideId,
+			driver_id: driverId,
+		});
+
 		return res
 			.status(201)
 			.json({ message: "Ride created successfully", rideId: rideId });

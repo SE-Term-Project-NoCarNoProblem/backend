@@ -99,6 +99,21 @@ export async function createRequest(req: Request, res: Response) {
 			dropoff_lat: b.dropoff_lat,
 		});
 
+		// Emit socket event to notify all drivers about new ride request
+		const { io } = await import("../app");
+		io.emit("request:created", {
+			id: r.id,
+			customer_id: r.customer_id,
+			service: r.service,
+			fare: r.fare,
+			distance_m: r.distance_m,
+			requested_at: r.requested_at,
+			pickup_lng: r.pickup.lng,
+			pickup_lat: r.pickup.lat,
+			dropoff_lng: r.dropoff.lng,
+			dropoff_lat: r.dropoff.lat,
+		});
+
 		return res.status(201).json(r);
 	} catch (err: unknown) {
 		if (err instanceof ZodError) {
@@ -128,6 +143,13 @@ export async function deleteRequest(req: Request, res: Response) {
 
 	const ok = storeDelete(rideId);
 	if (!ok) return res.status(404).json({ error: "not_found" });
+
+	const { io } = await import("../app");
+	io.emit("request:canceled", {
+		id: rideId,
+		customer_id: customerId,
+	});
+
 	return res.status(204).end();
 }
 
@@ -254,6 +276,13 @@ export async function cancelRequest(req: Request, res: Response) {
 		logger.info(`Ride request cancelled: ${rideId} by customer ${customerId}`);
 		// remember that this request ID has been canceled
 		setCanceledRequest(rideId, { rideId, canceledAt: Date.now(), customerId });
+
+		const { io } = await import("../app");
+		io.emit("request:canceled", {
+			id: rideId,
+			customer_id: customerId,
+		});
+
 		return res
 			.status(200)
 			.json({ message: "Ride request canceled successfully", rideId });
