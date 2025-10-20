@@ -3,7 +3,6 @@ import {prisma} from '../lib/prisma';
 import {deleteRequest, getRequest, getIdToCustomerMap } from '../lib/requestStore';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
 
 export const rideValidator = z.object({
   id: z.uuid(),

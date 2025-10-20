@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { LRUCache } from "lru-cache";
 
 export type RideRequest = {
   id: string;
@@ -22,9 +23,24 @@ export type RideRequest = {
 const byCustomer = new Map<string, Map<string, RideRequest>>();
 const idToCustomer = new Map<string, string>();
 
+//graveyard for canceled requests
+// const idem = new LRUCache<string, any>({max:5000,ttl:1000*60*60}); // 1 hour ttl, max 5000 entries
+const canceledRequests = new LRUCache<string, any>({max:5000,ttl:1000*60*60}); // 1 hour ttl, max 5000 entries 
+//key is request_id
+
+export function getCanceledRequest(key: string) {
+  return canceledRequests.get(key);
+}
+
+export function setCanceledRequest(key: string | undefined, value: any) {
+  if (key) canceledRequests.set(key, value);
+}
+
+
 export function getIdToCustomerMap() {
   return idToCustomer;
 }
+
 
 //get a bucket and create one if there is none that matches the cid
 function getBucket(customerId: string) {
@@ -35,6 +51,7 @@ function getBucket(customerId: string) {
   }
   return b;
 }
+
 
 // Haversine distance (meters)
 function haversineM(lat1: number, lon1: number, lat2: number, lon2: number) {
