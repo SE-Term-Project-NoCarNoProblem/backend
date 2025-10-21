@@ -213,7 +213,33 @@ export async function getRide(req: Request, res: Response) {
 			return res.status(403).json({ error: "Forbidden" });
 		}
 
-		return res.status(200).json(ride);
+		// Extract lat/lng from PostGIS points
+		const locationData = await prisma.$queryRaw<
+			Array<{
+				pickup_lat: number;
+				pickup_lng: number;
+				dropoff_lat: number;
+				dropoff_lng: number;
+			}>
+		>`
+			SELECT 
+				ST_Y(pickup_location::geometry) as pickup_lat,
+				ST_X(pickup_location::geometry) as pickup_lng,
+				ST_Y(destination::geometry) as dropoff_lat,
+				ST_X(destination::geometry) as dropoff_lng
+			FROM ride
+			WHERE id = ${rideId}::uuid
+		`;
+
+		const rideWithLocations = {
+			...ride,
+			pickup_lat: locationData[0]?.pickup_lat || 0,
+			pickup_lng: locationData[0]?.pickup_lng || 0,
+			dropoff_lat: locationData[0]?.dropoff_lat || 0,
+			dropoff_lng: locationData[0]?.dropoff_lng || 0,
+		};
+
+		return res.status(200).json(rideWithLocations);
 	} catch (error: any) {
 		logger.error("Error fetching ride:", error);
 		return res.status(500).json({ error: "Internal server error" });
@@ -441,6 +467,65 @@ export async function cancelRide(req: Request, res: Response) {
 		}
 
 		logger.error("Error cancelling ride:", error);
+		return res.status(500).json({ error: "Internal server error" });
+	}
+}
+
+// GET /rides/me/active - Get driver's active rides
+export async function myActiveRides(req: Request, res: Response) {
+	const driverId = res.locals.user?.id;
+	if (!driverId) {
+		return res.status(401).json({ error: "User not authenticated" });
+	}
+
+	try {
+		// Fetch ongoing rides where the driver is the current user
+		const ongoingRides = await prisma.$queryRaw<
+			Array<{
+				id: string;
+				customer_id: string;
+				driver_id: string;
+				vehicle_id: string;
+				price: number;
+				timestamp: Date;
+				ride_status: string;
+				ride_progress_status: string;
+				pickup_lng: number;
+				pickup_lat: number;
+				dropoff_lng: number;
+				dropoff_lat: number;
+			}>
+		>`
+			SELECT 
+				id, customer_id, driver_id, vehicle_id, price, timestamp, ride_status, ride_progress_status,
+				ST_X(pickup_location::geometry) as pickup_lng,
+				ST_Y(pickup_location::geometry) as pickup_lat,
+				ST_X(destination::geometry) as dropoff_lng,
+				ST_Y(destination::geometry) as dropoff_lat
+			FROM ride
+			WHERE driver_id = ${driverId}::uuid
+			AND ride_status = 'ongoing'
+		`;
+
+		const formattedRides = ongoingRides.map((ride) => ({
+			id: ride.id,
+			customer_id: ride.customer_id,
+			driver_id: ride.driver_id,
+			vehicle_id: ride.vehicle_id,
+			fare: ride.price,
+			timestamp: ride.timestamp,
+			pickup_lng: ride.pickup_lng,
+			pickup_lat: ride.pickup_lat,
+			dropoff_lng: ride.dropoff_lng,
+			dropoff_lat: ride.dropoff_lat,
+			ride_status: ride.ride_status,
+			ride_progress_status: ride.ride_progress_status,
+			status: "ongoing" as const,
+		}));
+
+		return res.json(formattedRides);
+	} catch (err) {
+		logger.error("Error fetching driver's active rides", err);
 		return res.status(500).json({ error: "Internal server error" });
 	}
 }

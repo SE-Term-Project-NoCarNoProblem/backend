@@ -5,10 +5,12 @@ import {
 	getRide,
 	updateRideStatus,
 	cancelRide,
+	myActiveRides,
 } from "../controllers/ride.controller";
 
 const router = Router();
 
+router.get("/me/active", auth, myActiveRides);
 router.get("/:id", auth, getRide);
 router.post("/:id/accept", auth, acceptRide);
 router.patch("/:id/status", auth, updateRideStatus);
