@@ -14,12 +14,7 @@ import {
 import { io } from "../app";
 
 // Ride progress status types
-type RideProgress =
-	| "accepted"
-	| "on_the_way"
-	| "arrived"
-	| "picked_up"
-	| "completed";
+type RideProgress = "on_the_way" | "arrived" | "picked_up" | "completed";
 
 export const rideValidator = z.object({
 	id: z.uuid(),
@@ -131,8 +126,8 @@ export async function acceptRide(req: Request, res: Response) {
 		io.emit(`ride:${rideId}:accepted`, {
 			rideId,
 			driverId,
-			status: "accepted",
-			progress_status: "accepted",
+			status: "ongoing",
+			progress_status: "on_the_way",
 		});
 
 		io.emit("request:accepted", {
@@ -237,7 +232,6 @@ export async function updateRideStatus(req: Request, res: Response) {
 
 	// Validate progress status
 	const validStatuses: RideProgress[] = [
-		"accepted",
 		"on_the_way",
 		"arrived",
 		"picked_up",
