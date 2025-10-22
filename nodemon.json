@@ -1,6 +1,6 @@
 {
 	"watch": ["src", ".env"],
 	"ext": "ts",
-	"exec": "esbuild src/app.ts --platform=node --bundle --sourcemap --minify --outdir=build --log-level=silent && node --enable-source-maps build/app.js",
-	"signal": "SIGINT"
+	"exec": "esbuild src/app.ts --platform=node --bundle --sourcemap --sources-content=false --outdir=build --log-level=warning && node --enable-source-maps build/app.js",
+	"signal": "SIGTERM"
 }

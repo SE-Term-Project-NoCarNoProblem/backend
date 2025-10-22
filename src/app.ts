@@ -21,8 +21,17 @@ import {
 	removeDriverPosition,
 } from "./controllers/driver.controller";
 import { authSocket } from "./middlewares/auth";
+import { prisma } from "./lib/prisma";
 
 const app = express();
+
+function gracefulShutdown(signal: string) {
+	logger.info(`Bye. (${signal})`);
+	prisma.$disconnect();
+	process.exit();
+}
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
 
 app.use(cors());
 app.use(requestLog);
