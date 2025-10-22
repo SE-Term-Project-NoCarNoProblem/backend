@@ -1,5 +1,4 @@
 import { createLogger, format, transports } from "winston";
-import "dotenv/config";
 const { combine, timestamp, printf } = format;
 
 const fm = printf(({ level, message, timestamp }) => {

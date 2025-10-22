@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
-import { Prisma } from "../../generated/prisma";
+import { Prisma } from "../generated/prisma/client";
+import { userInclude } from "../generated/prisma/models";
 
 export async function getUser(req: Request, res: Response) {
 	try {
@@ -15,7 +16,7 @@ export async function getUser(req: Request, res: Response) {
 			? includeParam.split(",").map((i) => i.trim())
 			: [];
 
-		const include: Prisma.userInclude = {};
+		const include: userInclude = {};
 
 		if (includes.includes("customer")) {
 			include.customer = true;
@@ -79,7 +80,7 @@ export async function getMe(req: Request, res: Response) {
 			? includeParam.split(",").map((i) => i.trim())
 			: [];
 
-		const include: Prisma.userInclude = {};
+		const include: userInclude = {};
 
 		if (includes.includes("customer")) {
 			include.customer = true;

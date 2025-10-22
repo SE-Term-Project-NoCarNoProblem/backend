@@ -5,7 +5,9 @@
 	"scripts": {
 		"dev": "nodemon",
 		"build": "rimraf build && esbuild src/app.ts --platform=node --bundle --minify --keep-names --outdir=build --outbase=src --sourcemap && copyfiles package.json build",
-		"format": "prettier --write src"
+		"format": "prettier --write src",
+		"db:generate": "prisma generate",
+		"db:push": "prisma db push"
 	},
 	"repository": {
 		"type": "git",
@@ -19,7 +21,8 @@
 	"homepage": "https://github.com/OmsinKrissada/se-proj-backend#readme",
 	"description": "",
 	"dependencies": {
-		"@prisma/client": "^6.15.0",
+		"@prisma/adapter-pg": "^6.17.1",
+		"@prisma/client": "^6.17.1",
 		"@supabase/supabase-js": "^2.75.1",
 		"@types/cors": "^2.8.19",
 		"@types/multer": "^2.0.0",
