@@ -298,3 +298,5 @@ export async function patchMe(req: Request, res: Response) {
 		res.status(500).json({ error: "Internal server error" });
 	}
 }
+
+export async function deleteUser(req: Request, res: Response) {}
