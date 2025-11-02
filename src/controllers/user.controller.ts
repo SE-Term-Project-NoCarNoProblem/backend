@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "../generated/prisma/client";
 import { userInclude } from "../generated/prisma/models";
+import { supabase } from "../lib/supabase";
 
 export async function getUser(req: Request, res: Response) {
 	try {
@@ -299,4 +300,26 @@ export async function patchMe(req: Request, res: Response) {
 	}
 }
 
-export async function deleteUser(req: Request, res: Response) {}
+export async function deleteUser(req: Request, res: Response) {
+	try {
+		const userId = res.locals.user?.id;
+
+		if (!userId) {
+			return res.status(401).json({ error: "Unauthorized" });
+		}
+
+		const user = await prisma.user.findUnique({ where: { id: userId } });
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		await prisma.user.delete({ where: { id: userId } });
+
+		await supabase.auth.admin.deleteUser(userId);
+
+		return res.json({ message: "Account deleted" });
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ error: "Failed to delete account" });
+	}
+}
