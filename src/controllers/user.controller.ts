@@ -298,3 +298,12 @@ export async function patchMe(req: Request, res: Response) {
 		res.status(500).json({ error: "Internal server error" });
 	}
 }
+
+export async function updateUserStatus(req: Request, res: Response) {
+	const userId = res.locals.user?.id;
+	const { status } = req.body;
+
+	if (!userId) {
+		return res.status(401).json({ error: "Unauthorized" });
+	}
+}
