@@ -12,6 +12,6 @@ const router = Router();
 router.get("/me", auth, getMe);
 router.patch("/me", auth, patchMe);
 router.get("/:id", getUser);
-router.patch(":/id/status", updateUserStatus);
+router.patch(":/id/status", auth, updateUserStatus);
 
 export default router;
