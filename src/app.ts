@@ -20,6 +20,7 @@ import {
 	registerDriverEvents,
 	removeDriverPosition,
 } from "./controllers/driver.controller";
+import ticketRoutes from "./routes/ticket.routes";
 import { authSocket } from "./middlewares/auth";
 import { prisma } from "./lib/prisma";
 
@@ -57,6 +58,7 @@ app.use("/api/drivers", driverRoutes);
 app.use("/api/rides", ridesRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/tickets", ticketRoutes);
 
 // ---------- socket io ----------
 const httpServer = createServer(app);
