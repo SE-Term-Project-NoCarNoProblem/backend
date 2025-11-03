@@ -72,6 +72,13 @@ model resolve {
   @@id([support_id, support_ticket_id], map: "resolve_pk")
 }
 
+enum end_reason {
+  completed
+  customer_canceled
+  driver_canceled
+  no_show
+}
+
 model ride {
   id                                       String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   pickup_location                          Unsupported("point")
@@ -80,7 +87,7 @@ model ride {
   customer_id                              String               @db.Uuid
   driver_id                                String               @db.Uuid
   vehicle_id                               String               @db.Uuid
-  timestamp                                DateTime             @db.Timestamptz(6)
+  timestamp                                DateTime             @db.Timestamptz(6) // creation time
   rating                                   Int?
   ride_status                              ride_status
   ride_progress_status                     ride_progress_status @default(on_the_way)
@@ -90,6 +97,8 @@ model ride {
   vehicle                                  vehicle              @relation(fields: [vehicle_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "vehicle")
   support_ticket_support_ticket_rideToride support_ticket[]     @relation("support_ticket_rideToride")
   transaction                              transaction[]
+  ended_at                                 DateTime?            @db.Timestamptz(6)
+  end_reason                               end_reason?
 
   @@index([customer_id], map: "customer_idx_on_ride")
 }
