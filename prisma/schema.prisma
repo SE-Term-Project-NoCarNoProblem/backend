@@ -63,15 +63,6 @@ model rejected_driver {
   driver    driver   @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "driver_superclass")
 }
 
-model resolve {
-  support_id        String         @db.Uuid
-  support_ticket_id String         @db.Uuid
-  timestamp         DateTime       @db.Timestamptz(3)
-  support_ticket    support_ticket @relation(fields: [support_ticket_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "resolve_support_ticket_fk")
-
-  @@id([support_id, support_ticket_id], map: "resolve_pk")
-}
-
 enum end_reason {
   completed
   customer_canceled
@@ -106,6 +97,8 @@ model ride {
 model support {
   id   String @id @db.Uuid
   user user   @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "support_user_fk")
+
+  support_ticket support_ticket[]
 }
 
 model support_ticket {
@@ -115,8 +108,9 @@ model support_ticket {
   topic                          String    @default("Unnamed ticket")
   timestamp                      DateTime  @db.Timestamptz(6)
   detail                         String
-  is_resolved                    Boolean
-  resolve                        resolve[]
+  resolved_at                    DateTime? @db.Timestamptz(6)
+  support                        support?  @relation(fields: [support_id], references: [id])
+  support_id                     String?   @db.Uuid
   ride_support_ticket_rideToride ride      @relation("support_ticket_rideToride", fields: [ride], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ride")
 }
 
