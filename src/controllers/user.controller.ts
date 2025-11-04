@@ -308,14 +308,19 @@ export async function deleteUser(req: Request, res: Response) {
 			return res.status(401).json({ error: "Unauthorized" });
 		}
 
+		const supabaseRes = await supabase.auth.admin.deleteUser(userId);
+		if (supabaseRes.error) {
+			return res
+				.status(500)
+				.json({ error: "Failed to delete Supabase account" });
+		}
+
 		const user = await prisma.user.findUnique({ where: { id: userId } });
 		if (!user) {
 			return res.status(404).json({ error: "User not found" });
 		}
 
 		await prisma.user.delete({ where: { id: userId } });
-
-		await supabase.auth.admin.deleteUser(userId);
 
 		return res.json({ message: "Account deleted" });
 	} catch (error) {
