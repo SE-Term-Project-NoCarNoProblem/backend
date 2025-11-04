@@ -112,7 +112,7 @@ model support_ticket {
   id                             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   is_customer                    Boolean
   ride                           String    @db.Uuid
-  topic                          String
+  topic                          String    @default("Unnamed ticket")
   timestamp                      DateTime  @db.Timestamptz(6)
   detail                         String
   is_resolved                    Boolean
