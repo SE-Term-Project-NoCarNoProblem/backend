@@ -59,7 +59,6 @@ export async function login(req: Request, res: Response) {
 	}
 
 	const token = result.data.session?.access_token;
-
 	// res.cookie("token", result.data.session?.access_token, {
 	// 	httpOnly: true,
 	// 	maxAge: cookieAge,
