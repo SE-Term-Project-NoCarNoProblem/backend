@@ -300,10 +300,40 @@ export async function patchMe(req: Request, res: Response) {
 }
 
 export async function updateUserStatus(req: Request, res: Response) {
+	const ALLOWED_STATUSES = ["active", "suspended", "banned"] as const;
+	type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
+
 	const userId = res.locals.user?.id;
 	const { status } = req.body;
 
 	if (!userId) {
 		return res.status(401).json({ error: "Unauthorized" });
+	}
+
+	if (
+		typeof status !== "string" ||
+		!ALLOWED_STATUSES.includes(status as AllowedStatus)
+	) {
+		return res.status(400).json({
+			error: `Invalid status. Allowed values: ${ALLOWED_STATUSES.join(", ")}`,
+		});
+	}
+
+	try {
+		const updated = await prisma.user.update({
+			where: { id: userId },
+			data: { status: status as AllowedStatus },
+			select: {
+				id: true,
+				email: true,
+				fullname: true,
+				status: true,
+			},
+		});
+
+		return res.status(200).json({ user: updated });
+	} catch (err) {
+		console.log("Failed to update user status", err);
+		return res.status(500).json({ error: "Failed to update status" });
 	}
 }
