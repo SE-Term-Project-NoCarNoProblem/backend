@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import { Prisma } from "../generated/prisma/client";
 import { userInclude } from "../generated/prisma/models";
 import { supabase } from "../lib/supabase";
+import { uuidv4 } from "zod";
 
 export async function getUser(req: Request, res: Response) {
 	try {
@@ -303,28 +304,42 @@ export async function patchMe(req: Request, res: Response) {
 export async function deleteUser(req: Request, res: Response) {
 	try {
 		const userId = res.locals.user?.id;
-
 		if (!userId) {
 			return res.status(401).json({ error: "Unauthorized" });
 		}
 
-		const supabaseRes = await supabase.auth.admin.deleteUser(userId);
-		if (supabaseRes.error) {
+		const supRes = await supabase.auth.admin.deleteUser(userId);
+		if (supRes?.error) {
 			return res
 				.status(500)
-				.json({ error: "Failed to delete Supabase account" });
+				.json({ error: "Failed to delete Supabase auth user" });
 		}
 
-		const user = await prisma.user.findUnique({ where: { id: userId } });
-		if (!user) {
-			return res.status(404).json({ error: "User not found" });
+		try {
+			await prisma.$transaction(async (tx) => {
+				await tx.user.update({
+					where: { id: userId },
+					data: {
+						fullname: "Deleted User",
+						email: `deleted+${uuidv4()}@example.com`,
+						phone_number: "0000000000",
+						profile_pic: null,
+						id_pic: null,
+						age: null,
+						gender: null,
+						// deleted_at: new Date()
+					},
+				});
+			});
+		} catch (prismaErr: any) {
+			return res.status(500).json({ error: "Failed to anonymize user" });
 		}
 
-		await prisma.user.delete({ where: { id: userId } });
-
-		return res.json({ message: "Account deleted" });
-	} catch (error) {
-		console.log(error);
+		return res.json({
+			message: "Account deleted successfully",
+		});
+	} catch (err) {
+		console.log("Error deleting account:", err);
 		return res.status(500).json({ error: "Failed to delete account" });
 	}
 }
