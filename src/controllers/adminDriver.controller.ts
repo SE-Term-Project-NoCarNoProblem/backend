@@ -73,3 +73,18 @@ export async function rejectDriver(req: Request, res: Response) {
 		return res.status(500).json({ error: "Failed to reject driver" });
 	}
 }
+
+export async function getWaitingDrivers(req: Request, res: Response) {
+	const drivers = await prisma.waiting_driver.findMany();
+	return res.json(drivers);
+}
+
+export async function getApprovedDrivers(req: Request, res: Response) {
+	const drivers = await prisma.verified_driver.findMany();
+	return res.json(drivers);
+}
+
+export async function getRejectedDrivers(req: Request, res: Response) {
+	const drivers = await prisma.rejected_driver.findMany();
+	return res.json(drivers);
+}
