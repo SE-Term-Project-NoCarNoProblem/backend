@@ -12,6 +12,7 @@ import driverRoutes from "./routes/driver.routes";
 import ridesRoutes from "./routes/ride.routes";
 import requestRoutes from "./routes/request.routes";
 import customerRoutes from "./routes/customer.routes";
+import adminDriverRoutes from "./routes/admin.driver.routes";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import {
@@ -57,6 +58,7 @@ app.use("/api/drivers", driverRoutes);
 app.use("/api/rides", ridesRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/admin/drivers", adminDriverRoutes);
 
 // ---------- socket io ----------
 const httpServer = createServer(app);
