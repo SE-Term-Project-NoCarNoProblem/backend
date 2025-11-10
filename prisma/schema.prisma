@@ -131,18 +131,21 @@ enum gender {
 }
 
 model user {
-  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  fullname     String
-  email        String
-  phone_number String
-  profile_pic  String?
-  id_pic       String? // TODO: in the end, should not be optional
-  age          Int? // TODO: in the end, should not be optional
-  gender       gender? // TODO: in the end, should not be optional
-  admin        admin?
-  customer     customer?
-  driver       driver?
-  support      support?
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  fullname        String
+  email           String
+  phone_number    String
+  profile_pic     String?
+  id_pic          String? // TODO: in the end, should not be optional
+  age             Int? // TODO: in the end, should not be optional
+  suspended       Boolean
+  suspended_until DateTime
+  suspended_by    DateTime
+  gender          gender? // TODO: in the end, should not be optional
+  admin           admin?
+  customer        customer?
+  driver          driver?
+  support         support?
 }
 
 model vehicle {
