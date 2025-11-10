@@ -2,8 +2,8 @@ import { Router } from "express";
 import { auth } from "../middlewares/auth";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import {
-  approveDriver,
-  rejectDriver,
+	approveDriver,
+	rejectDriver,
 } from "../controllers/adminDriver.controller";
 
 const router = Router();
