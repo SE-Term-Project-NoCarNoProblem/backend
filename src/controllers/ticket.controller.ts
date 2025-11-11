@@ -6,10 +6,12 @@ export async function createTicket(req: Request, res: Response) {
 		const userId = res.locals.user?.id;
 		if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-		const { rideId, detail } = req.body;
+		const { rideId, topic, detail } = req.body;
 
 		if (!rideId || !detail) {
-			return res.status(400).json({ error: "rideId and detail are required" });
+			return res.status(400).json({
+				error: "rideId and detail are required",
+			});
 		}
 
 		const ride = await prisma.ride.findUnique({
@@ -33,10 +35,19 @@ export async function createTicket(req: Request, res: Response) {
 		const ticket = await prisma.support_ticket.create({
 			data: {
 				ride: rideId,
+				topic: topic || "Unnamed ticket",
 				detail,
 				is_customer: isCustomer,
-				is_resolved: false,
 				timestamp: new Date(),
+			},
+			select: {
+				id: true,
+				ride: true,
+				topic: true,
+				detail: true,
+				is_customer: true,
+				timestamp: true,
+				resolved_at: true,
 			},
 		});
 
