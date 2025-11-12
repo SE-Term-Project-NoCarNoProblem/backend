@@ -16,6 +16,7 @@ model admin {
   user            user              @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "admin_user_fk")
   rejected_driver rejected_driver[]
   verified_driver verified_driver[]
+  suspended       user[]            @relation("suspended_by")
 }
 
 model chat_log {
@@ -127,18 +128,22 @@ enum gender {
 }
 
 model user {
-  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  fullname     String
-  email        String
-  phone_number String
-  profile_pic  String?
-  id_pic       String? // TODO: in the end, should not be optional
-  age          Int? // TODO: in the end, should not be optional
-  gender       gender? // TODO: in the end, should not be optional
-  admin        admin?
-  customer     customer?
-  driver       driver?
-  support      support?
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  fullname        String
+  email           String
+  phone_number    String
+  profile_pic     String?
+  id_pic          String? // TODO: in the end, should not be optional
+  age             Int? // TODO: in the end, should not be optional
+  suspended       Boolean   @default(false)
+  suspended_until DateTime?
+  suspended_by    admin?    @relation("suspended_by", fields: [suspended_by_id], references: [id])
+  suspended_by_id String?   @db.Uuid
+  gender          gender? // TODO: in the end, should not be optional
+  admin           admin?
+  customer        customer?
+  driver          driver?
+  support         support?
 }
 
 model vehicle {

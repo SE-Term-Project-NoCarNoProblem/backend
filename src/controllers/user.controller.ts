@@ -300,40 +300,64 @@ export async function patchMe(req: Request, res: Response) {
 }
 
 export async function updateUserStatus(req: Request, res: Response) {
-	const ALLOWED_STATUSES = ["active", "suspended", "banned"] as const;
-	type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
+	const { action, until } = req.body;
+	const userId = req.params.id;
+	const adminId = res.locals.user?.id;
 
-	const userId = res.locals.user?.id;
-	const { status } = req.body;
-
-	if (!userId) {
+	if (!adminId) {
 		return res.status(401).json({ error: "Unauthorized" });
 	}
 
-	if (
-		typeof status !== "string" ||
-		!ALLOWED_STATUSES.includes(status as AllowedStatus)
-	) {
+	const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+	if (!admin) {
+		return res.status(403).json({ error: "Only admins has privilege" });
+	}
+
+	if (!userId) {
+		return res.status(400).json({ error: "User ID required" });
+	}
+
+	if (!["activate", "suspend"].includes(action)) {
 		return res.status(400).json({
-			error: `Invalid status. Allowed values: ${ALLOWED_STATUSES.join(", ")}`,
+			error: "Invalid action. Allowed: activate, suspend",
 		});
 	}
 
 	try {
+		let data: any = {};
+
+		if (action === "activate") {
+			data = {
+				suspended: false,
+				suspended_until: null,
+				suspended_by_id: null,
+			};
+		}
+
+		if (action === "suspend") {
+			data = {
+				suspended: true,
+				suspended_by_id: adminId,
+				suspended_until: until ? new Date(until) : null,
+			};
+		}
+
 		const updated = await prisma.user.update({
 			where: { id: userId },
-			data: { status: status as AllowedStatus },
+			data,
 			select: {
 				id: true,
-				email: true,
 				fullname: true,
-				status: true,
+				email: true,
+				suspended: true,
+				suspended_until: true,
+				suspended_by_id: true,
 			},
 		});
 
 		return res.status(200).json({ user: updated });
 	} catch (err) {
-		console.log("Failed to update user status", err);
-		return res.status(500).json({ error: "Failed to update status" });
+		console.error("Failed to update user status", err);
+		return res.status(500).json({ error: "Failed to update user status" });
 	}
 }
