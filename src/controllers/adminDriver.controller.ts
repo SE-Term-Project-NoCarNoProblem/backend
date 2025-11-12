@@ -88,3 +88,21 @@ export async function getRejectedDrivers(req: Request, res: Response) {
 	const drivers = await prisma.rejected_driver.findMany();
 	return res.json(drivers);
 }
+
+export async function getAllDrivers(req: Request, res: Response) {
+	try {
+		const waiting = await prisma.waiting_driver.findMany();
+		const approved = await prisma.verified_driver.findMany();
+		const rejected = await prisma.rejected_driver.findMany();
+
+		const data = [
+			...waiting.map((d) => ({ ...d, driver_status: "Pending" })),
+			...approved.map((d) => ({ ...d, driver_status: "Active" })),
+			...rejected.map((d) => ({ ...d, driver_status: "Rejected" }))
+		];
+
+		return res.json(data);
+	} catch (e) {
+		return res.status(500).json({ error: "Failed to fetch drivers" });
+	}
+}

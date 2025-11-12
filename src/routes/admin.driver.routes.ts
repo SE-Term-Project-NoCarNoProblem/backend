@@ -7,6 +7,7 @@ import {
 	getWaitingDrivers,
 	getApprovedDrivers,
 	getRejectedDrivers,
+	getAllDrivers,
 } from "../controllers/adminDriver.controller";
 
 const router = Router();
@@ -17,5 +18,6 @@ router.post("/:driverId/reject", auth, requireAdmin, rejectDriver);
 router.get("/waiting", auth, requireAdmin, getWaitingDrivers);
 router.get("/approved", auth, requireAdmin, getApprovedDrivers);
 router.get("/rejected", auth, requireAdmin, getRejectedDrivers);
+router.get("/", auth, requireAdmin, getAllDrivers);
 
 export default router;
