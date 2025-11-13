@@ -298,3 +298,83 @@ export async function patchMe(req: Request, res: Response) {
 		res.status(500).json({ error: "Internal server error" });
 	}
 }
+
+export async function getAllUsers(req: Request, res: Response) {
+	try {
+		const users = await prisma.user.findMany({
+			select: {
+				id: true,
+				fullname: true,
+				email: true,
+				driver: {
+					select: {
+						verified_driver: {
+							select: {
+								status: true, // "busy", "suspended", "free"
+								ride: {
+									select: {
+										rating: true,
+									},
+								},
+							},
+						},
+						waiting_driver: {
+							select: { requested_date: true },
+						},
+						rejected_driver: {
+							select: { id: true },
+						},
+					},
+				},
+				customer: {
+					select: { id: true },
+				},
+			},
+		});
+
+		const formatted = users.map((u) => {
+			let role = "CUSTOMER";
+			let status = "Active";
+			let rating: number | null = null;
+
+			if (u.driver) {
+				role = "DRIVER";
+
+				if (u.driver.verified_driver) {
+					status = u.driver.verified_driver.status;
+
+					// Calculate average rating
+					const rideRatings = u.driver.verified_driver.ride
+						.map((r) => r.rating)
+						.filter((r): r is number => r !== null && r !== undefined);
+
+					if (rideRatings.length > 0) {
+						rating =
+							rideRatings.reduce((sum, r) => sum + r, 0) /
+							rideRatings.length;
+					}
+				} else if (u.driver.waiting_driver) {
+					status = "Waiting for approval";
+				} else if (u.driver.rejected_driver) {
+					status = "Rejected";
+				} else {
+					status = "Unknown";
+				}
+			}
+
+			return {
+				id: u.id,
+				name: u.fullname,
+				email: u.email,
+				role,
+				status,
+				rating: rating ? parseFloat(rating.toFixed(1)) : null,
+			};
+		});
+
+		return res.json(formatted);
+	} catch (error) {
+		console.error("❌ Error fetching users:", error);
+		return res.status(500).json({ error: "Failed to fetch users" });
+	}
+}
