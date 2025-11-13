@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { logger } from "../utils/logger";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 import {
 	deleteRequest,
 	getRequest,
