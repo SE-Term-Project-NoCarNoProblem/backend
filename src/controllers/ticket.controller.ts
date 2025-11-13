@@ -6,7 +6,15 @@ import { logger } from "../utils/logger";
 // GET /tickets
 export async function getTickets(req: Request, res: Response) {
   try {
-    const tickets = await prisma.support_ticket.findMany();
+    const tickets = await prisma.support_ticket.findMany({
+      include: {
+        ride_support_ticket_rideToride: {
+          include: {
+            vehicle: true,
+          },
+        },
+      },
+    });
     logger.info("Fetched all support tickets");
     return res.status(200).json(tickets);
   } catch (error) {
