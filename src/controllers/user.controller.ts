@@ -298,3 +298,66 @@ export async function patchMe(req: Request, res: Response) {
 		res.status(500).json({ error: "Internal server error" });
 	}
 }
+
+export async function updateUserStatus(req: Request, res: Response) {
+	const { action, until } = req.body;
+	const userId = req.params.id;
+	const adminId = res.locals.user?.id;
+
+	if (!adminId) {
+		return res.status(401).json({ error: "Unauthorized" });
+	}
+
+	const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+	if (!admin) {
+		return res.status(403).json({ error: "Only admins has privilege" });
+	}
+
+	if (!userId) {
+		return res.status(400).json({ error: "User ID required" });
+	}
+
+	if (!["activate", "suspend"].includes(action)) {
+		return res.status(400).json({
+			error: "Invalid action. Allowed: activate, suspend",
+		});
+	}
+
+	try {
+		let data: any = {};
+
+		if (action === "activate") {
+			data = {
+				suspended: false,
+				suspended_until: null,
+				suspended_by_id: null,
+			};
+		}
+
+		if (action === "suspend") {
+			data = {
+				suspended: true,
+				suspended_by_id: adminId,
+				suspended_until: until ? new Date(until) : null,
+			};
+		}
+
+		const updated = await prisma.user.update({
+			where: { id: userId },
+			data,
+			select: {
+				id: true,
+				fullname: true,
+				email: true,
+				suspended: true,
+				suspended_until: true,
+				suspended_by_id: true,
+			},
+		});
+
+		return res.status(200).json({ user: updated });
+	} catch (err) {
+		console.error("Failed to update user status", err);
+		return res.status(500).json({ error: "Failed to update user status" });
+	}
+}
