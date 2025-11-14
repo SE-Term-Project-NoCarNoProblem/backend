@@ -5,6 +5,7 @@ import cors from "cors";
 import { logger } from "./utils/logger";
 import { requestLog } from "./middlewares/logging";
 
+// routes
 import profileRoutes from "./routes/profile.routes";
 import userRoutes from "./routes/user.routes";
 import authRoutes from "./routes/auth.routes";
@@ -13,6 +14,8 @@ import ridesRoutes from "./routes/ride.routes";
 import requestRoutes from "./routes/request.routes";
 import customerRoutes from "./routes/customer.routes";
 import ticketRoutes from "./routes/ticket.routes";
+import chatRoutes from "./routes/chat.routes";
+
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import {
@@ -23,6 +26,7 @@ import {
 } from "./controllers/driver.controller";
 import { authSocket } from "./middlewares/auth";
 import { prisma } from "./lib/prisma";
+import { registerChatEvents } from "./controllers/chat.controller";
 
 const app = express();
 
@@ -59,6 +63,7 @@ app.use("/api/rides", ridesRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/chat", chatRoutes);
 
 // ---------- socket io ----------
 const httpServer = createServer(app);
@@ -79,6 +84,7 @@ io.on("connection", (socket) => {
 	logger.debug(`Client connected, now ${io.engine.clientsCount}`);
 	registerGeneralEvents(socket);
 	registerDriverEvents(socket);
+	registerChatEvents(socket);
 	socket.emit("position:driver_positions", getDriverPositions());
 });
 
