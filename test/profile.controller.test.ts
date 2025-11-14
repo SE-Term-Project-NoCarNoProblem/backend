@@ -124,7 +124,7 @@ describe('Profile Controller', () => {
       });
 
       // Mock Prisma call
-      mockedPrisma.user.update.mockResolvedValue(mockUser);
+      (mockedPrisma.user.update as jest.Mock).mockResolvedValue(mockUser);
 
       // (Act)
       await uploadProfilePicture(mockRequest as Request, mockResponse as Response);
@@ -169,9 +169,9 @@ describe('Profile Controller', () => {
       });
 
       // Mock Prisma
-      mockedPrisma.user.update.mockResolvedValue(mockDriverUser); // User with driver
-      mockedPrisma.verified_driver.delete.mockResolvedValue({ id: 'test-user-id' });
-      mockedPrisma.waiting_driver.create.mockResolvedValue({ id: 'test-user-id' });
+      (mockedPrisma.user.update as jest.Mock).mockResolvedValue(mockDriverUser); // User with driver
+      (mockedPrisma.verified_driver.delete as jest.Mock).mockResolvedValue({ id: 'test-user-id' });
+      (mockedPrisma.waiting_driver.create as jest.Mock).mockResolvedValue({ id: 'test-user-id' });
 
       // (Act)
       await uploadProfilePicture(mockRequest as Request, mockResponse as Response);
@@ -271,7 +271,7 @@ describe('Profile Controller', () => {
       mockedStorage.getPublicUrl.mockResolvedValue({
         data: { publicUrl: 'http://example.com/new-pic.webp' },
       });
-      mockedPrisma.user.update.mockRejectedValue(dbError); // Prisma fails
+      (mockedPrisma.user.update as jest.Mock).mockRejectedValue(dbError); // Prisma fails
 
       // (Act)
       await uploadProfilePicture(mockRequest as Request, mockResponse as Response);
@@ -289,13 +289,13 @@ describe('Profile Controller', () => {
     it('should delete profile picture successfully', async () => {
       // (Setup)
       // Mock that user has a profile picture
-      mockedPrisma.user.findUnique.mockResolvedValue({
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({
         profile_pic: 'http://example.com/old-pic.webp',
       });
       // Mock Supabase delete success
       mockedStorage.remove.mockResolvedValue({ data: {}, error: null });
       // Mock Prisma update success
-      mockedPrisma.user.update.mockResolvedValue({
+      (mockedPrisma.user.update as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         fullname: 'Test User',
         email: 'test@example.com',
@@ -326,7 +326,7 @@ describe('Profile Controller', () => {
     it('should return 400 if user has no profile picture to delete', async () => {
       // (Setup)
       // Mock that user has no profile picture
-      mockedPrisma.user.findUnique.mockResolvedValue({ profile_pic: null });
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ profile_pic: null });
 
       // (Act)
       await deleteProfilePicture(mockRequest as Request, mockResponse as Response);
@@ -353,7 +353,7 @@ describe('Profile Controller', () => {
 
     it('should return 404 if file not found in storage during delete', async () => {
       // (Setup)
-      mockedPrisma.user.findUnique.mockResolvedValue({
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({
         profile_pic: 'http://example.com/old-pic.webp',
       });
       // Mock Supabase delete failure
@@ -373,7 +373,7 @@ describe('Profile Controller', () => {
     it('should return 404 if user not found in database', async () => {
       // (Setup)
       // Simulate user not found
-      mockedPrisma.user.findUnique.mockResolvedValue(null);
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
       // (Act)
       await deleteProfilePicture(mockRequest as Request, mockResponse as Response);
@@ -387,7 +387,7 @@ describe('Profile Controller', () => {
       // (Setup)
       const genericError = new Error('Something broke');
       // Mock that user has a profile picture
-      mockedPrisma.user.findUnique.mockResolvedValue({
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({
         profile_pic: 'http://example.com/old-pic.webp',
       });
       // *** Simulate Supabase remove failing with a generic error ***
@@ -407,12 +407,12 @@ describe('Profile Controller', () => {
     it('should return 500 if prisma update fails', async () => {
       // (Setup)
       const dbError = new Error('Database Error');
-      mockedPrisma.user.findUnique.mockResolvedValue({
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({
         profile_pic: 'http://example.com/old-pic.webp',
       });
       mockedStorage.remove.mockResolvedValue({ data: {}, error: null });
       // *** Simulate Prisma failing ***
-      mockedPrisma.user.update.mockRejectedValue(dbError);
+      (mockedPrisma.user.update as jest.Mock).mockRejectedValue(dbError);
 
       // (Act)
       await deleteProfilePicture(mockRequest as Request, mockResponse as Response);
@@ -439,7 +439,7 @@ describe('Profile Controller', () => {
       mockRequest.file = mockFile;
       
       // 1. Mock that user is a verified driver
-      mockedPrisma.driver.findUnique.mockResolvedValue({
+      (mockedPrisma.driver.findUnique as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         verified_driver: { id: 'test-user-id' }
       });
@@ -449,10 +449,10 @@ describe('Profile Controller', () => {
         data: { publicUrl: 'http://example.com/id.webp' },
       });
       // 3. Mock move from verified to waiting
-      mockedPrisma.verified_driver.delete.mockResolvedValue({ id: 'test-user-id' });
-      mockedPrisma.waiting_driver.create.mockResolvedValue({ id: 'test-user-id' });
+      (mockedPrisma.verified_driver.delete as jest.Mock).mockResolvedValue({ id: 'test-user-id' });
+      (mockedPrisma.waiting_driver.create as jest.Mock).mockResolvedValue({ id: 'test-user-id' });
       // 4. Mock user update and return driver object
-      mockedPrisma.user.update.mockResolvedValue({ 
+      (mockedPrisma.user.update as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         id_pic: 'test-user-id/id_document.webp',
         driver: {
@@ -492,7 +492,7 @@ describe('Profile Controller', () => {
       mockRequest.file = mockFile;
       
       // 1. Mock that user is a non-verified driver
-      mockedPrisma.user.findUnique.mockResolvedValue({ 
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         id_pic: null,
         driver: {
@@ -505,7 +505,7 @@ describe('Profile Controller', () => {
       mockedStorage.upload.mockResolvedValue({ data: { path: 'path' }, error: null });
 
       // 3. Mock that user is updated successfully
-      mockedPrisma.user.update.mockResolvedValue({
+      (mockedPrisma.user.update as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         id_pic: 'test-user-id/id_document.webp',
         driver: {
@@ -575,7 +575,7 @@ describe('Profile Controller', () => {
       // (Setup)
       mockRequest.file = mockFile;
       // Simulate that user already has an ID picture
-      mockedPrisma.user.findUnique.mockResolvedValue({
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         id_pic: 'path/to/existing-id.webp',
         driver: null
@@ -609,7 +609,7 @@ describe('Profile Controller', () => {
       mockRequest.file = mockFile;
       const uploadError = new Error('Supabase Error');
       // Mock that user has no existing ID picture
-      mockedPrisma.user.findUnique.mockResolvedValue({ id: 'test-user-id', id_pic: null, driver: null });
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'test-user-id', id_pic: null, driver: null });
       // *** Simulate Supabase upload failure ***
       mockedStorage.upload.mockResolvedValue({ data: null, error: uploadError });
 
@@ -625,10 +625,10 @@ describe('Profile Controller', () => {
       // (Setup)
       mockRequest.file = mockFile;
       const dbError = new Error('Database Error');
-      mockedPrisma.user.findUnique.mockResolvedValue({ id: 'test-user-id', id_pic: null, driver: null });
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'test-user-id', id_pic: null, driver: null });
       mockedStorage.upload.mockResolvedValue({ data: { path: 'path' }, error: null });
       // *** Simulate Prisma failing ***
-      mockedPrisma.user.update.mockRejectedValue(dbError);
+      (mockedPrisma.user.update as jest.Mock).mockRejectedValue(dbError);
 
       // (Act)
       await uploadIdPicture(mockRequest as Request, mockResponse as Response);
@@ -645,7 +645,7 @@ describe('Profile Controller', () => {
     it('should get id picture URL successfully', async () => {
       // (Setup)
       // 1. Mock that user has an ID picture
-      mockedPrisma.user.findUnique.mockResolvedValue({
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         id_pic: 'test-user-id/id_document.webp' 
       });
@@ -687,7 +687,7 @@ describe('Profile Controller', () => {
 
     it('should return 404 if driver has no id picture', async () => {
       // (Setup)
-      mockedPrisma.user.findUnique.mockResolvedValue({
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         id_pic: null
       });
@@ -703,7 +703,7 @@ describe('Profile Controller', () => {
     it('should return 404 if user not found in database', async () => {
       // (Setup)
       // Simulate user not found
-      mockedPrisma.user.findUnique.mockResolvedValue(null);
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
       // (Act)
       await getIdPicture(mockRequest as Request, mockResponse as Response);
@@ -717,7 +717,7 @@ describe('Profile Controller', () => {
       // (Setup)
       const signError = new Error('Supabase Sign Error');
       // Mock that user has an ID picture
-      mockedPrisma.user.findUnique.mockResolvedValue({
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         id_pic: 'test-user-id/id_document.webp',
         driver: null
@@ -742,7 +742,7 @@ describe('Profile Controller', () => {
       // (Setup)
       const dbError = new Error('Database Error');
       // *** Simulate Prisma failing ***
-      mockedPrisma.user.findUnique.mockRejectedValue(dbError);
+      (mockedPrisma.user.findUnique as jest.Mock).mockRejectedValue(dbError);
 
       // (Act)
       await getIdPicture(mockRequest as Request, mockResponse as Response);
@@ -761,7 +761,7 @@ describe('Profile Controller', () => {
       mockRequest.file = mockFile;
       
       // 1. Mock USER.findUnique (passing all 3 IF checks)
-      mockedPrisma.user.findUnique.mockResolvedValue({ 
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         id_pic: 'path/to/id_pic.webp',
         driver: {
@@ -773,15 +773,15 @@ describe('Profile Controller', () => {
       // 2. Mock Supabase
       mockedStorage.upload.mockResolvedValue({ data: { path: 'path' }, error: null });
       // 3. Mock DRIVER.update (Controller calls this to save)
-      mockedPrisma.driver.update.mockResolvedValue({ 
+      (mockedPrisma.driver.update as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         license_pic: 'test-user-id/license_document.webp',
         verified_driver: { id: 'test-user-id', status: 'free' },
         user: { id: 'test-user-id' }
       });
       // 4. Mock move from verified to waiting
-      mockedPrisma.verified_driver.delete.mockResolvedValue({ id: 'test-user-id' });
-      mockedPrisma.waiting_driver.create.mockResolvedValue({ id: 'test-user-id' });
+      (mockedPrisma.verified_driver.delete as jest.Mock).mockResolvedValue({ id: 'test-user-id' });
+      (mockedPrisma.waiting_driver.create as jest.Mock).mockResolvedValue({ id: 'test-user-id' });
 
       // (Act)
       await uploadLicensePicture(mockRequest as Request, mockResponse as Response);
@@ -809,7 +809,7 @@ describe('Profile Controller', () => {
       mockRequest.file = mockFile;
       
       // 1. Mock USER.findUnique (Passing all 3 IF checks)
-      mockedPrisma.user.findUnique.mockResolvedValue({ 
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         id_pic: 'path/to/id_pic.webp',
         driver: {
@@ -821,7 +821,7 @@ describe('Profile Controller', () => {
       // 2. Mock Supabase
       mockedStorage.upload.mockResolvedValue({ data: { path: 'path' }, error: null });
       // 3. Mock DRIVER.update
-      mockedPrisma.driver.update.mockResolvedValue({ 
+      (mockedPrisma.driver.update as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         license_pic: 'test-user-id/license_document.webp',
         verified_driver: null,
@@ -886,7 +886,7 @@ describe('Profile Controller', () => {
       mockRequest.file = mockFile;
       
       // 1. Mock USER.findUnique (to pass first 2 IF checks)
-      mockedPrisma.user.findUnique.mockResolvedValue({ 
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         id_pic: 'path/to/id_pic.webp',
         driver: { 
@@ -910,7 +910,7 @@ describe('Profile Controller', () => {
       // (Setup)
       mockRequest.file = mockFile;
       // Simulate that user has no ID picture
-      mockedPrisma.user.findUnique.mockResolvedValue({ 
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         id_pic: null,
         driver: {
@@ -935,7 +935,7 @@ describe('Profile Controller', () => {
       // Simulate .pdf file
       mockRequest.file = { ...mockFile, mimetype: 'application/pdf' };
       // Mock to pass first 2 IF checks (has id_pic and is a driver)
-      mockedPrisma.user.findUnique.mockResolvedValue({ 
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         id_pic: 'path/to/id.webp', 
         driver: { 
@@ -974,7 +974,7 @@ describe('Profile Controller', () => {
       mockRequest.file = mockFile; 
 
       // 2. Simulate USER.findUnique (Controller calls this) to return a user without a driver object
-      mockedPrisma.user.findUnique.mockResolvedValue({
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         id_pic: 'path/to/id.webp', // have id_pic (to pass 400 check)
         driver: null // This is main point causing 403
@@ -1001,7 +1001,7 @@ describe('Profile Controller', () => {
       mockRequest.file = mockFile;
       const uploadError = new Error('Supabase Error');
       // Mock to pass first 2 IF checks (has id_pic and is a driver)
-      mockedPrisma.user.findUnique.mockResolvedValue({ 
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         id_pic: 'path/to/id.webp', 
         driver: { id: 'test-user-id', license_pic: null, verified_driver: null } 
@@ -1021,14 +1021,14 @@ describe('Profile Controller', () => {
       // (Setup)
       mockRequest.file = mockFile;
       const dbError = new Error('Database Error');
-      mockedPrisma.user.findUnique.mockResolvedValue({ 
+      (mockedPrisma.user.findUnique as jest.Mock).mockResolvedValue({ 
         id: 'test-user-id', 
         id_pic: 'path/to/id.webp', 
         driver: { id: 'test-user-id', license_pic: null, verified_driver: null } 
       });
       mockedStorage.upload.mockResolvedValue({ data: { path: 'path' }, error: null });
       // *** Simulate Prisma failing ***
-      mockedPrisma.driver.update.mockRejectedValue(dbError);
+      (mockedPrisma.driver.update as jest.Mock).mockRejectedValue(dbError);
 
       // (Act)
       await uploadLicensePicture(mockRequest as Request, mockResponse as Response);
@@ -1045,7 +1045,7 @@ describe('Profile Controller', () => {
     it('should get signed URL for license picture successfully', async () => {
       // (Setup)
       // 1. Mock that user is a driver with a license picture
-      mockedPrisma.driver.findUnique.mockResolvedValue({
+      (mockedPrisma.driver.findUnique as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         license_pic: 'test-user-id/license_pic.webp'
       });
@@ -1089,7 +1089,7 @@ describe('Profile Controller', () => {
     it('should return 403 if user is not a driver', async () => {
       // (Setup)
       // Simulate that user is not a driver
-      mockedPrisma.driver.findUnique.mockResolvedValue(null);
+      (mockedPrisma.driver.findUnique as jest.Mock).mockResolvedValue(null);
 
       // (Act)
       await getLicensePicture(mockRequest as Request, mockResponse as Response);
@@ -1102,7 +1102,7 @@ describe('Profile Controller', () => {
 
     it('should return 404 if driver has no license picture', async () => {
       // (Setup)
-      mockedPrisma.driver.findUnique.mockResolvedValue({
+      (mockedPrisma.driver.findUnique as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         license_pic: null
       });
@@ -1118,7 +1118,7 @@ describe('Profile Controller', () => {
     it('should return 500 if signed URL creation fails', async () => {
       // (Setup)
       const signError = new Error('Supabase Sign Error');
-      mockedPrisma.driver.findUnique.mockResolvedValue({
+      (mockedPrisma.driver.findUnique as jest.Mock).mockResolvedValue({
         id: 'test-user-id',
         license_pic: 'test-user-id/license_pic.webp'
       });
@@ -1142,7 +1142,7 @@ describe('Profile Controller', () => {
       // (Setup)
       const dbError = new Error('Database Error');
       // *** Simulate Prisma.driver.findUnique failing ***
-      mockedPrisma.driver.findUnique.mockRejectedValue(dbError);
+      (mockedPrisma.driver.findUnique as jest.Mock).mockRejectedValue(dbError);
 
       // (Act)
       await getLicensePicture(mockRequest as Request, mockResponse as Response);
