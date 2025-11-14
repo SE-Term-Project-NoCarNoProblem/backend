@@ -7,15 +7,7 @@ import { Socket } from "socket.io";
 export async function getChatMessages(req: Request, res: Response) {
 	const userId = res.locals.user!.id;
 
-	const {
-		data: rideId,
-		success,
-		error,
-	} = z.string().safeParse(req.params.rideId);
-
-	if (!success) {
-		return res.status(400).json({ error: "Invalid ride ID" });
-	}
+	const rideId = req.params.rideId;
 
 	try {
 		const messages = await prisma.chat_log.findMany({
