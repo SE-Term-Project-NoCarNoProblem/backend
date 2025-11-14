@@ -8,7 +8,9 @@
 		"format": "prettier --write src",
 		"db:generate": "prisma generate",
 		"db:push": "prisma db push",
-		"db:studio": "prisma studio"
+		"db:studio": "prisma studio",
+		"test": "jest",
+		"test-coverage": "jest --watchAll --coverage"
 	},
 	"repository": {
 		"type": "git",
@@ -37,13 +39,16 @@
 	},
 	"devDependencies": {
 		"@types/express": "^5.0.3",
+		"@types/jest": "^30.0.0",
 		"@types/node": "^24.9.1",
 		"dotenv": "^17.2.3",
 		"esbuild": "^0.25.11",
+		"jest": "^30.2.0",
 		"nodemon": "^3.1.10",
 		"prettier": "^3.6.2",
 		"prisma": "^6.18.0",
 		"rimraf": "^6.0.1",
+		"ts-jest": "^29.4.5",
 		"typescript": "^5.9.3"
 	},
 	"packageManager": "pnpm@10.19.0+sha512.c9fc7236e92adf5c8af42fd5bf1612df99c2ceb62f27047032f4720b33f8eacdde311865e91c411f2774f618d82f320808ecb51718bfa82c060c4ba7c76a32b8"
