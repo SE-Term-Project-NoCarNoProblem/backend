@@ -6,8 +6,23 @@ import { Socket } from "socket.io";
 
 export async function getChatMessages(req: Request, res: Response) {
 	const userId = res.locals.user!.id;
-
 	const rideId = req.params.rideId;
+
+	const ridePassengers = await prisma.ride.findUnique({
+		where: { id: rideId },
+		select: { customer_id: true, driver_id: true },
+	});
+
+	if (!ridePassengers) {
+		return res.status(404).json({ error: "Ride not found" });
+	}
+
+	if (
+		userId !== ridePassengers.customer_id &&
+		userId !== ridePassengers.driver_id
+	) {
+		return res.status(403).json({ error: "You are not part of this ride" });
+	}
 
 	try {
 		const messages = await prisma.chat_log.findMany({
@@ -57,9 +72,7 @@ export async function createChatMessage(req: Request, res: Response) {
 			userId !== ridePassengers.customer_id &&
 			userId !== ridePassengers.driver_id
 		) {
-			return res
-				.status(403)
-				.json({ error: "Unauthorized: You are not part of this ride" });
+			return res.status(403).json({ error: "You are not part of this ride" });
 		}
 
 		const isCustomerSender = userId === ridePassengers.customer_id;
