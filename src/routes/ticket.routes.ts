@@ -4,7 +4,7 @@ import { auth } from '../middlewares/auth';
 
 const router = Router();
 
-router.patch("/:id/resolve",auth,resolveTicket);
+router.patch("/:id/:support_id/resolve",auth,resolveTicket);
 
 
 export default router;

@@ -4,6 +4,7 @@ import { Prisma } from "../generated/prisma/client";
 
 export async function resolveTicket(req: Request, res: Response) {
     const ticketId = req.params.id;
+    const support_id=req.params.support_id;
     const { detail } = req.body;
     try {
 
@@ -12,6 +13,7 @@ export async function resolveTicket(req: Request, res: Response) {
                 id: ticketId,
             },
             data: {
+                support_id:support_id,
                 detail: detail,
                 resolved_at: new Date()
             },
