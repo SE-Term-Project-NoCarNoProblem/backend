@@ -7,13 +7,14 @@ import {
 	cancelRide,
 	myActiveRides,
 } from "../controllers/ride.controller";
+import { requireVerifiedDriver } from "../middlewares/requireVerifiedDriver";
 
 const router = Router();
 
 router.get("/me/active", auth, myActiveRides);
 router.get("/:id", auth, getRide);
-router.post("/:id/accept", auth, acceptRide);
-router.patch("/:id/status", auth, updateRideStatus);
-router.delete("/:id", auth, cancelRide);
+router.post("/:id/accept", auth, requireVerifiedDriver, acceptRide);
+router.patch("/:id/status", auth, requireVerifiedDriver, updateRideStatus);
+router.delete("/:id", auth, requireVerifiedDriver, cancelRide);
 
 export default router;
