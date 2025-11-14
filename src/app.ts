@@ -27,6 +27,10 @@ import {
 import { authSocket } from "./middlewares/auth";
 import { prisma } from "./lib/prisma";
 import { registerChatEvents } from "./controllers/chat.controller";
+import {
+	registerSocketSession,
+	unregisterSocketSession,
+} from "./lib/socketSessions";
 
 const app = express();
 
@@ -77,6 +81,7 @@ io.use(authSocket);
 function registerGeneralEvents(socket: Socket) {
 	socket.on("disconnect", () => {
 		logger.debug(`Client disconnected, now ${io.engine.clientsCount}`);
+		unregisterSocketSession(socket.data.user_id, socket.id);
 	});
 }
 
@@ -86,6 +91,7 @@ io.on("connection", (socket) => {
 	registerDriverEvents(socket);
 	registerChatEvents(socket);
 	socket.emit("position:driver_positions", getDriverPositions());
+	registerSocketSession(socket.data.user_id, socket.id);
 });
 
 setInterval(() => {
