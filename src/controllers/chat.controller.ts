@@ -3,6 +3,8 @@ import { prisma } from "../lib/prisma";
 import z from "zod";
 import { logger } from "../utils/logger";
 import { Socket } from "socket.io";
+import { io } from "../app";
+import { getUserSocketIds } from "../lib/socketSessions";
 
 export async function getChatMessages(req: Request, res: Response) {
 	const userId = res.locals.user!.id;
@@ -30,7 +32,7 @@ export async function getChatMessages(req: Request, res: Response) {
 			orderBy: { timestamp: "desc" },
 			// take: 50,
 		});
-		return res.status(200).json({ messages: messages });
+		return res.status(200).json({ messages: messages }); // TODO: extract into senderId
 	} catch (error) {
 		logger.error("Error fetching chat messages:", error);
 		return res.status(500).json({ error: "Internal server error" });
@@ -85,6 +87,21 @@ export async function createChatMessage(req: Request, res: Response) {
 				timestamp: new Date(),
 			},
 		});
+
+		// emit to clients
+		const sendTo = (socketId: string, message: string) => {
+			io.to(socketId).emit("chat:new_message", {
+				rideId,
+				senderId: userId,
+				content: message,
+			});
+		};
+		getUserSocketIds(ridePassengers.customer_id)?.forEach((socketId) =>
+			sendTo(socketId, body.content)
+		);
+		getUserSocketIds(ridePassengers.driver_id)?.forEach((socketId) =>
+			sendTo(socketId, body.content)
+		);
 
 		return res.status(201).json({ message: newMessage });
 	} catch (error) {
