@@ -32,7 +32,17 @@ export async function getChatMessages(req: Request, res: Response) {
 			orderBy: { timestamp: "desc" },
 			// take: 50,
 		});
-		return res.status(200).json({ messages: messages }); // TODO: extract into senderId
+		return res.status(200).json({
+			messages: messages.map((m) => ({
+				id: m.id,
+				content: m.message,
+				rideId: m.ride_id,
+				timestamp: m.timestamp,
+				senderId: m.is_customer_sender
+					? ridePassengers.customer_id
+					: ridePassengers.driver_id,
+			})),
+		});
 	} catch (error) {
 		logger.error("Error fetching chat messages:", error);
 		return res.status(500).json({ error: "Internal server error" });
