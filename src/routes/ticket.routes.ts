@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getTickets } from "../controllers/ticket.controller";
+import { getTickets, getMyTickets } from "../controllers/ticket.controller";
 import { createTicket } from "../controllers/ticket.controller";
 import { resolveTicket } from "../controllers/ticket.controller";
 import { auth } from "../middlewares/auth";
@@ -46,6 +46,52 @@ const router = Router();
  *         description: User not authenticated
  */
 router.get("/", auth, getTickets);
+
+/**
+ * @swagger
+ * /api/ticket/me:
+ *   get:
+ *     summary: Get tickets filed by current user
+ *     description: Retrieve all support tickets filed by the authenticated user
+ *     tags: [Ticket]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User tickets retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       ride:
+ *                         type: string
+ *                       topic:
+ *                         type: string
+ *                       detail:
+ *                         type: string
+ *                       is_customer:
+ *                         type: boolean
+ *                       timestamp:
+ *                         type: string
+ *                         format: date-time
+ *                       resolved_at:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                       ride_support_ticket_rideToride:
+ *                         type: object
+ *       401:
+ *         description: User not authenticated
+ */
+router.get("/me", auth, getMyTickets);
 
 /**
  * @swagger

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { logger } from "../utils/logger";
+import { reverseGeocode } from "../utils/geocoding";
 
 // GET /tickets
 export async function getTickets(req: Request, res: Response) {
@@ -19,6 +20,102 @@ export async function getTickets(req: Request, res: Response) {
 	} catch (error) {
 		logger.error("Error fetching support tickets", { error });
 		return res.status(500).json({ message: "Internal server error" });
+	}
+}
+
+// GET /tickets/me - Get tickets filed by the authenticated user
+export async function getMyTickets(req: Request, res: Response) {
+	try {
+		const userId = res.locals.user?.id;
+		if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+		// Find all rides where the user is either customer or driver
+		const rides = await prisma.ride.findMany({
+			where: {
+				OR: [{ customer_id: userId }, { driver_id: userId }],
+			},
+			select: { id: true },
+		});
+
+		const rideIds = rides.map((r) => r.id);
+
+		if (rideIds.length === 0) {
+			return res.status(200).json({ data: [] });
+		}
+
+		// Get tickets with ride details using raw SQL to extract coordinates
+		const tickets = await prisma.$queryRaw<any[]>`
+			SELECT 
+				st.id,
+				st.ride,
+				st.topic,
+				st.detail,
+				st.is_customer,
+				st.timestamp,
+				st.resolved_at,
+				r.timestamp as ride_timestamp,
+				r.ended_at as ride_ended_at,
+				ST_Y(r.pickup_location::geometry) as pickup_lat,
+				ST_X(r.pickup_location::geometry) as pickup_lng,
+				ST_Y(r.destination::geometry) as destination_lat,
+				ST_X(r.destination::geometry) as destination_lng
+			FROM support_ticket st
+			JOIN ride r ON st.ride = r.id
+			WHERE st.ride = ANY(${rideIds}::uuid[])
+			AND (
+				(st.is_customer = true AND r.customer_id = ${userId}::uuid)
+				OR
+				(st.is_customer = false AND r.driver_id = ${userId}::uuid)
+			)
+			ORDER BY st.timestamp DESC
+		`;
+
+		// Reverse geocode all locations
+		const ticketsWithAddresses = await Promise.all(
+			tickets.map(async (ticket) => {
+				const pickupAddress = await reverseGeocode(
+					Number(ticket.pickup_lat),
+					Number(ticket.pickup_lng)
+				);
+				const destinationAddress = await reverseGeocode(
+					Number(ticket.destination_lat),
+					Number(ticket.destination_lng)
+				);
+
+				return {
+					id: ticket.id,
+					ride: ticket.ride,
+					topic: ticket.topic,
+					detail: ticket.detail,
+					is_customer: ticket.is_customer,
+					timestamp: ticket.timestamp,
+					resolved_at: ticket.resolved_at,
+					ride_details: {
+						timestamp: ticket.ride_timestamp,
+						ended_at: ticket.ride_ended_at,
+						pickup_location: {
+							lat: Number(ticket.pickup_lat),
+							lng: Number(ticket.pickup_lng),
+							address: pickupAddress,
+						},
+						destination: {
+							lat: Number(ticket.destination_lat),
+							lng: Number(ticket.destination_lng),
+							address: destinationAddress,
+						},
+					},
+				};
+			})
+		);
+
+		logger.info(
+			`Fetched ${ticketsWithAddresses.length} tickets for user ${userId}`
+		);
+		return res.status(200).json({ data: ticketsWithAddresses });
+	} catch (error) {
+		logger.error("Error fetching user tickets", { error });
+		console.error("Error fetching user tickets", { error });
+		return res.status(500).json({ error: "Internal server error" });
 	}
 }
 
