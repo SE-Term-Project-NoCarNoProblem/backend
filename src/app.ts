@@ -86,6 +86,29 @@ setInterval(() => {
 	broadcastDriverPositions(io);
 }, 1000);
 
+// swagger setup
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
+const swaggerOptions = {
+	failOnErrors: true,
+	definition: {
+		openapi: "3.0.0",
+		info: {
+			title: "No Car No Problem",
+			version: "1.0.0",
+		},
+	},
+	apis: ["./src/routes/*.ts"],
+};
+
+const swaggerSpecs = swaggerJsdoc(swaggerOptions);
+app.use(
+	"/docs",
+	express.static("build/swagger-ui-dist", { index: false }),
+	swaggerUi.serve,
+	swaggerUi.setup(swaggerSpecs)
+);
+
 const port = +(process.env.PORT || 8000);
 httpServer.listen(port);
 logger.info(`Listening on port ${port}`);
