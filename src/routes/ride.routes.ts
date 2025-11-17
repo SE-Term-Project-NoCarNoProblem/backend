@@ -6,6 +6,7 @@ import {
 	updateRideStatus,
 	cancelRide,
 	myActiveRides,
+	myRideHistory,
 } from "../controllers/ride.controller";
 import { requireVerifiedDriver } from "../middlewares/requireVerifiedDriver";
 
@@ -46,6 +47,66 @@ const router = Router();
  *         description: User not authenticated
  */
 router.get("/me/active", auth, myActiveRides);
+
+/**
+ * @swagger
+ * /api/ride/me/history:
+ *   get:
+ *     summary: Get my ride history
+ *     description: Fetch a paginated list of rides where the authenticated user is the customer or driver
+ *     tags: [Ride]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *           maximum: 100
+ *         description: Maximum number of rides to return
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [customer, driver]
+ *         description: Limit results to rides where the user was the customer or driver
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           example: completed,canceled
+ *         description: Comma-separated list of ride statuses to include
+ *     responses:
+ *       200:
+ *         description: Ride history retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   fare:
+ *                     type: number
+ *                   requested_at:
+ *                     type: string
+ *                     format: date-time
+ *                   ended_at:
+ *                     type: string
+ *                     format: date-time
+ *                   ride_status:
+ *                     type: string
+ *                   driver:
+ *                     type: object
+ *                   vehicle:
+ *                     type: object
+ *       401:
+ *         description: User not authenticated
+ */
+router.get("/me/history", auth, myRideHistory);
 
 /**
  * @swagger

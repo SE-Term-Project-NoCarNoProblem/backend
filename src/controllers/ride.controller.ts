@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
+import { Prisma } from "../generated/prisma/client";
 import { logger } from "../utils/logger";
 import { z } from "zod";
 import {
@@ -525,6 +526,180 @@ export async function myActiveRides(req: Request, res: Response) {
 		return res.json(formattedRides);
 	} catch (err) {
 		logger.error("Error fetching driver's active rides", err);
+		return res.status(500).json({ error: "Internal server error" });
+	}
+}
+
+type RideStatusFilter = "ongoing" | "completed" | "canceled";
+
+// GET /rides/me/history - Get ride history for authenticated user
+export async function myRideHistory(req: Request, res: Response) {
+	const userId = res.locals.user?.id;
+	if (!userId) {
+		return res.status(401).json({ error: "User not authenticated" });
+	}
+
+	const roleParam = (req.query.role as string | undefined)?.toLowerCase();
+	const statusParamRaw = (req.query.status as string | undefined)
+		?.split(",")
+		.map((s) => s.trim().toLowerCase())
+		.filter(Boolean);
+	const limitParam = Number.parseInt(req.query.limit as string, 10);
+	const limit = Number.isFinite(limitParam)
+		? Math.min(Math.max(limitParam, 1), 100)
+		: 50;
+
+	const whereBase: Prisma.rideWhereInput =
+		roleParam === "driver"
+			? { driver_id: userId }
+			: roleParam === "customer"
+				? { customer_id: userId }
+				: {
+						OR: [{ driver_id: userId }, { customer_id: userId }],
+					};
+
+	const allowedStatuses: RideStatusFilter[] = [
+		"ongoing",
+		"completed",
+		"canceled",
+	];
+	const filteredStatuses = statusParamRaw?.filter(
+		(status): status is RideStatusFilter =>
+			allowedStatuses.includes(status as RideStatusFilter)
+	);
+
+	const where: Prisma.rideWhereInput = { ...whereBase };
+	if (filteredStatuses && filteredStatuses.length) {
+		where.AND = [
+			...(where.AND ?? []),
+			{ ride_status: { in: filteredStatuses as RideStatusFilter[] } },
+		];
+	}
+
+	try {
+		const rides = await prisma.ride.findMany({
+			where,
+			orderBy: { timestamp: "desc" },
+			take: limit,
+			include: {
+				customer: {
+					select: {
+						id: true,
+						user: {
+							select: {
+								fullname: true,
+								profile_pic: true,
+							},
+						},
+					},
+				},
+				verified_driver: {
+					select: {
+						id: true,
+						driver: {
+							select: {
+								user: {
+									select: {
+										fullname: true,
+										profile_pic: true,
+									},
+								},
+							},
+						},
+					},
+				},
+				vehicle: {
+					select: {
+						id: true,
+						model: true,
+						make: true,
+						color: true,
+						registration: true,
+						model_type: {
+							select: { type: true },
+						},
+					},
+				},
+			},
+		});
+
+		let locationRows: Array<{
+			id: string;
+			pickup_lat: number;
+			pickup_lng: number;
+			dropoff_lat: number;
+			dropoff_lng: number;
+		}> = [];
+		if (rides.length) {
+			const rideIdList = Prisma.join(
+				rides.map((ride) => Prisma.sql`${ride.id}::uuid`)
+			);
+			locationRows = await prisma.$queryRaw<
+				Array<{
+					id: string;
+					pickup_lat: number;
+					pickup_lng: number;
+					dropoff_lat: number;
+					dropoff_lng: number;
+				}>
+			>(Prisma.sql`
+				SELECT 
+					id,
+					ST_Y(pickup_location::geometry) as pickup_lat,
+					ST_X(pickup_location::geometry) as pickup_lng,
+					ST_Y(destination::geometry) as dropoff_lat,
+					ST_X(destination::geometry) as dropoff_lng
+				FROM ride
+				WHERE id IN (${rideIdList})
+			`);
+		}
+
+		const locationMap = new Map(locationRows.map((row) => [row.id, row]));
+		const payload = rides.map((ride) => {
+			const coords = locationMap.get(ride.id);
+			return {
+				id: ride.id,
+				fare: ride.price,
+				requested_at: ride.timestamp,
+				ended_at: ride.ended_at,
+				end_reason: ride.end_reason,
+				ride_status: ride.ride_status,
+				ride_progress_status: ride.ride_progress_status,
+				rating: ride.rating,
+				pickup_lat: coords?.pickup_lat ?? null,
+				pickup_lng: coords?.pickup_lng ?? null,
+				dropoff_lat: coords?.dropoff_lat ?? null,
+				dropoff_lng: coords?.dropoff_lng ?? null,
+				driver: ride.verified_driver
+					? {
+							id: ride.verified_driver.id,
+							name: ride.verified_driver.driver?.user.fullname ?? null,
+							avatar: ride.verified_driver.driver?.user.profile_pic ?? null,
+						}
+					: null,
+				customer: ride.customer
+					? {
+							id: ride.customer.id,
+							name: ride.customer.user.fullname,
+							avatar: ride.customer.user.profile_pic,
+						}
+					: null,
+				vehicle: ride.vehicle
+					? {
+							id: ride.vehicle.id,
+							model: ride.vehicle.model,
+							make: ride.vehicle.make,
+							color: ride.vehicle.color,
+							registration: ride.vehicle.registration,
+							type: ride.vehicle.model_type?.type ?? null,
+						}
+					: null,
+			};
+		});
+
+		return res.json(payload);
+	} catch (error) {
+		logger.error("Error fetching ride history", error);
 		return res.status(500).json({ error: "Internal server error" });
 	}
 }
