@@ -7,7 +7,7 @@ import { auth } from "../middlewares/auth";
 
 const router = Router();
 
-router.get("/messages", auth, getChatMessages);
+router.get("/messages/:rideId", auth, getChatMessages);
 router.post("/message/:rideId", auth, createChatMessage);
 
 // real-time event handlers in controller file

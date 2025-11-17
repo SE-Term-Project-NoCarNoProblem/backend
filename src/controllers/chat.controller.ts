@@ -106,10 +106,10 @@ export async function createChatMessage(req: Request, res: Response) {
 				content: message,
 			});
 		};
-		getUserSocketIds(ridePassengers.customer_id)?.forEach((socketId) =>
+		getUserSocketIds(ridePassengers.customer_id)?.forEach((_, socketId) =>
 			sendTo(socketId, body.content)
 		);
-		getUserSocketIds(ridePassengers.driver_id)?.forEach((socketId) =>
+		getUserSocketIds(ridePassengers.driver_id)?.forEach((_, socketId) =>
 			sendTo(socketId, body.content)
 		);
 
