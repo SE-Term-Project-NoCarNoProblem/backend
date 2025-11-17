@@ -344,8 +344,8 @@ export const getVehicles = async (req: Request, res: Response) => {
 export const updateActiveVehicle = async (req: Request, res: Response) => {
 	try {
 		const userId = res.locals.user?.id;
-		const { vehicleId,driverId } = req.params;
-		
+		const { vehicleId, driverId } = req.params;
+
 		if (!userId) {
 			return res.status(401).json({ error: "User not authenticated" });
 		}
@@ -363,7 +363,7 @@ export const updateActiveVehicle = async (req: Request, res: Response) => {
 			}),
 			// turn on this one
 			prisma.vehicle.update({
-				where: { id: vehicleId },   // ✅ unique
+				where: { id: vehicleId },   
 				data: { active: true },
 			}),
 		]);
