@@ -156,10 +156,88 @@ router.patch("/me", auth, patchMe);
  */
 router.get("/:id", getUser);
 
+/**
+ * @swagger
+ * /api/user:
+ *   get:
+ *     summary: Get all users
+ *     description: Retrieve all users in the system
+ *     tags: [User]
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   fullname:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   phone_number:
+ *                     type: string
+ */
 router.get("/", getAllUsers);
 
+/**
+ * @swagger
+ * /api/user/status/{id}:
+ *   patch:
+ *     summary: Update user status
+ *     description: Update the status of a user (admin only)
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The user ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 description: New user status
+ *     responses:
+ *       200:
+ *         description: User status updated successfully
+ *       401:
+ *         description: User not authenticated
+ *       404:
+ *         description: User not found
+ */
 router.patch("/status/:id", auth, updateUserStatus);
 
+/**
+ * @swagger
+ * /api/user/me:
+ *   delete:
+ *     summary: Delete current user account
+ *     description: Delete the authenticated user's account
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User account deleted successfully
+ *       401:
+ *         description: User not authenticated
+ *       404:
+ *         description: User not found
+ */
 router.delete("/me", auth, deleteUser);
 
 export default router;

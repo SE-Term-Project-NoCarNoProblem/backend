@@ -98,6 +98,39 @@ router.get("/", auth, getTickets);
  *         description: Ride not found
  */
 router.post("/", auth, createTicket);
+
+/**
+ * @swagger
+ * /api/ticket/{id}/{support_id}/resolve:
+ *   patch:
+ *     summary: Resolve support ticket
+ *     description: Mark a support ticket as resolved by support staff
+ *     tags: [Ticket]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The ticket ID
+ *       - in: path
+ *         name: support_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The support staff ID
+ *     responses:
+ *       200:
+ *         description: Ticket resolved successfully
+ *       401:
+ *         description: User not authenticated
+ *       404:
+ *         description: Ticket not found
+ */
 router.patch("/:id/:support_id/resolve", auth, resolveTicket);
 
 export default router;

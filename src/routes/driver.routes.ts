@@ -131,8 +131,53 @@ router.get("/location", auth, getDrivers);
  *         description: Invalid coordinates
  */
 router.get("/nearby", getNearbyDrivers);
+
+/**
+ * @swagger
+ * /api/driver/{driverId}/ratingOverTime:
+ *   get:
+ *     summary: Get driver rating over time
+ *     description: Retrieve historical rating data for a driver
+ *     tags: [Driver]
+ *     parameters:
+ *       - in: path
+ *         name: driverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The driver ID
+ *     responses:
+ *       200:
+ *         description: Rating history retrieved successfully
+ *       404:
+ *         description: Driver not found
+ */
 router.get("/:driverId/ratingOverTime", getDriverRatingOverTime);
+
+/**
+ * @swagger
+ * /api/driver/{driverId}/cancelOverTime:
+ *   get:
+ *     summary: Get driver cancellation history
+ *     description: Retrieve cancellation statistics over time for a driver
+ *     tags: [Driver]
+ *     parameters:
+ *       - in: path
+ *         name: driverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The driver ID
+ *     responses:
+ *       200:
+ *         description: Cancellation history retrieved successfully
+ *       404:
+ *         description: Driver not found
+ */
 router.get("/:driverId/cancelOverTime", getCancleOverTime);
+
 router.get("/viewdriver/:rideId", viewDriver);
 
 /**
