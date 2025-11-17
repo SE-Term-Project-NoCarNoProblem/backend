@@ -7,6 +7,7 @@ import {
 	cancelRide,
 	myActiveRides,
 } from "../controllers/ride.controller";
+import { requireVerifiedDriver } from "../middlewares/requireVerifiedDriver";
 
 const router = Router();
 
@@ -132,7 +133,7 @@ router.get("/:id", auth, getRide);
  *       409:
  *         description: Ride already accepted or canceled
  */
-router.post("/:id/accept", auth, acceptRide);
+router.post("/:id/accept", auth, requireVerifiedDriver, acceptRide);
 
 /**
  * @swagger
@@ -176,7 +177,7 @@ router.post("/:id/accept", auth, acceptRide);
  *       404:
  *         description: Ride not found
  */
-router.patch("/:id/status", auth, updateRideStatus);
+router.patch("/:id/status", auth, requireVerifiedDriver, updateRideStatus);
 
 /**
  * @swagger
@@ -207,6 +208,6 @@ router.patch("/:id/status", auth, updateRideStatus);
  *       404:
  *         description: Ride not found
  */
-router.delete("/:id", auth, cancelRide);
+router.delete("/:id", auth, requireVerifiedDriver, cancelRide);
 
 export default router;
