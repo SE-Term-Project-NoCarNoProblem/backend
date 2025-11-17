@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { getUser, getMe, patchMe } from "../controllers/user.controller";
+import {
+	getUser,
+	getMe,
+	patchMe,
+	getAllUsers,
+} from "../controllers/user.controller";
 import { auth } from "../middlewares/auth";
 
 const router = Router();
@@ -148,5 +153,7 @@ router.patch("/me", auth, patchMe);
  *         description: User not found
  */
 router.get("/:id", getUser);
+
+router.get("/", getAllUsers);
 
 export default router;
