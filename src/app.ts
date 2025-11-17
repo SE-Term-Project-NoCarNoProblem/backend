@@ -98,7 +98,26 @@ const swaggerOptions = {
 		info: {
 			title: "No Car No Problem",
 			version: "1.0.0",
+			description:
+				"API documentation for No Car No Problem ride-sharing platform",
 		},
+		servers: [
+			{
+				url: `http://localhost:${+(process.env.PORT || 8000)}`,
+				description: "Development server",
+			},
+		],
+		components: {
+			securitySchemes: {
+				bearerAuth: {
+					type: "http",
+					scheme: "bearer",
+					bearerFormat: "JWT",
+					description: "Enter your JWT token",
+				},
+			},
+		},
+		security: [],
 	},
 	apis: ["./src/routes/*.ts"],
 };
