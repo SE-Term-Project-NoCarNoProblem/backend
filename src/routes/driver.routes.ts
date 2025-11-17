@@ -8,6 +8,8 @@ import {
 	updateDriverRating,
 	getDriverRatingOverTime,
 	getCancleOverTime,
+	updateActiveVehicle,
+	getVehicles,
 } from "../controllers/driver.controller";
 import { auth } from "../middlewares/auth";
 
@@ -178,8 +180,6 @@ router.get("/:driverId/ratingOverTime", getDriverRatingOverTime);
  */
 router.get("/:driverId/cancelOverTime", getCancleOverTime);
 
-router.get("/viewdriver/:rideId", viewDriver);
-
 /**
  * @swagger
  * /api/driver/viewdriver/{rideId}:
@@ -263,6 +263,8 @@ router.get("/viewdriver/:rideId", viewDriver);
  */
 router.get("/:driverId/rating", auth, getDriverRating);
 
+router.get("/:driverId/getVehicles", getVehicles);
+
 /**
  * @swagger
  * /api/driver/{rideId}/rating:
@@ -307,5 +309,7 @@ router.get("/:driverId/rating", auth, getDriverRating);
  *         description: Ride not found
  */
 router.put("/:rideId/rating", auth, updateDriverRating);
+
+router.put("/:vehicleId/:driverId/vehicle", auth, updateActiveVehicle);
 
 export default router;
