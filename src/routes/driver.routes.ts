@@ -6,6 +6,8 @@ import {
 	viewDriver,
 	getDriverRating,
 	updateDriverRating,
+	getDriverRatingOverTime,
+	getCancleOverTime,
 } from "../controllers/driver.controller";
 import { auth } from "../middlewares/auth";
 
@@ -129,6 +131,9 @@ router.get("/location", auth, getDrivers);
  *         description: Invalid coordinates
  */
 router.get("/nearby", getNearbyDrivers);
+router.get("/:driverId/ratingOverTime", getDriverRatingOverTime);
+router.get("/:driverId/cancelOverTime", getCancleOverTime);
+router.get("/viewdriver/:rideId", viewDriver);
 
 /**
  * @swagger

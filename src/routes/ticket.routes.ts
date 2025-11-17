@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getTickets } from "../controllers/ticket.controller";
 import { createTicket } from "../controllers/ticket.controller";
+import { resolveTicket } from "../controllers/ticket.controller";
 import { auth } from "../middlewares/auth";
 
 const router = Router();
@@ -97,5 +98,6 @@ router.get("/", auth, getTickets);
  *         description: Ride not found
  */
 router.post("/", auth, createTicket);
+router.patch("/:id/:support_id/resolve", auth, resolveTicket);
 
 export default router;
