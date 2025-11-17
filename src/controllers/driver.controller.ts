@@ -318,3 +318,61 @@ export const updateDriverRating = async (req: Request, res: Response) => {
 		res.status(500).json({ error: "Internal server error" });
 	}
 };
+
+export const getVehicles = async (req: Request, res: Response) => {
+	try {
+		const { driverId } = req.params;
+		const vehicles = await prisma.vehicle.findMany({
+			where: {
+				driver_id: driverId
+			}, select: {
+				id: true,
+				model: true,
+				make: true,
+				registration: true,
+				active: true,
+				driver_id: true,
+			},
+		})
+		res.json(vehicles);
+	} catch (err) {
+		console.log("Error getting driver vehicle", err);
+		res.status(500).json({ error: "Internal server error" });
+	}
+}
+
+export const updateActiveVehicle = async (req: Request, res: Response) => {
+	try {
+		const userId = res.locals.user?.id;
+		const { vehicleId,driverId } = req.params;
+		
+		if (!userId) {
+			return res.status(401).json({ error: "User not authenticated" });
+		}
+		const role = await getUserRole(userId);
+		if (role !== "DRIVER") {
+			return res
+				.status(403)
+				.json({ error: "No permission to edit profile" });
+		}
+		const [deactivated, activated] = await prisma.$transaction([
+			// turn off all others for this driver
+			prisma.vehicle.updateMany({
+				where: { driver_id: driverId },
+				data: { active: false },
+			}),
+			// turn on this one
+			prisma.vehicle.update({
+				where: { id: vehicleId },   // ✅ unique
+				data: { active: true },
+			}),
+		]);
+		return res.json({
+			deactivated: deactivated,
+			activated: activated
+		})
+	} catch (err) {
+		console.log("Error updating driver active vehicle", err);
+		res.status(500).json({ error: "Internal server error" });
+	}
+}

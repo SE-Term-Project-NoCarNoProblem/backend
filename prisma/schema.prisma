@@ -156,6 +156,7 @@ model vehicle {
   make            String
   registration    String
   color           String
+  active          Boolean         @default(false)
   driver_id       String          @db.Uuid
   ride            ride[]
   model_type      model_type      @relation(fields: [model, make], references: [model, make], onDelete: NoAction, onUpdate: NoAction, map: "model_type")

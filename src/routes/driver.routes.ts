@@ -6,6 +6,8 @@ import {
 	viewDriver,
 	getDriverRating,
 	updateDriverRating,
+	updateActiveVehicle,
+	getVehicles
 } from "../controllers/driver.controller";
 import { auth } from "../middlewares/auth";
 
@@ -21,10 +23,11 @@ router.get("/location", auth, getDrivers);
 router.get("/nearby", getNearbyDrivers);
 router.get("/viewdriver/:rideId", viewDriver);
 
+router.get("/:driverId/getVehicles",getVehicles);
 // Get rating
 router.get("/:driverId/rating", auth, getDriverRating);
 
 // Update rating
 router.put("/:rideId/rating", auth, updateDriverRating);
-
+router.put("/:vehicleId/:driverId/vehicle",auth,updateActiveVehicle);
 export default router;
