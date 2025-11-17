@@ -181,15 +181,31 @@ export async function createTicket(req: Request, res: Response) {
 
 export async function resolveTicket(req: Request, res: Response) {
 	const ticketId = req.params.id;
-	const support_id = req.params.support_id;
+	const userId = res.locals.user?.id;
 	const { detail } = req.body;
+
+	if (!userId) {
+		return res.status(401).json({ error: "Unauthorized" });
+	}
+
 	try {
+		const [support] = await Promise.all([
+			prisma.support.findUnique({ where: { id: userId } }),
+			// prisma.admin.findUnique({ where: { id: userId } }),
+		]);
+
+		if (!support) {
+			return res.status(403).json({
+				error: "Forbidden: Only support or admin can resolve tickets",
+			});
+		}
+
 		const updated = await prisma.support_ticket.update({
 			where: {
 				id: ticketId,
 			},
 			data: {
-				support_id: support_id,
+				support_id: userId,
 				detail: detail,
 				resolved_at: new Date(),
 			},

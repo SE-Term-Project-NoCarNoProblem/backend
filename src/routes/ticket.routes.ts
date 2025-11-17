@@ -177,6 +177,6 @@ router.post("/", auth, createTicket);
  *       404:
  *         description: Ticket not found
  */
-router.patch("/:id/:support_id/resolve", auth, resolveTicket);
+router.patch("/:id/resolve", auth, resolveTicket);
 
 export default router;
