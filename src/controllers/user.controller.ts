@@ -123,9 +123,26 @@ export async function getMe(req: Request, res: Response) {
 			return res.status(404).json({ error: "User not found" });
 		}
 
+		const roleBooleans = {
+			isCustomer: false,
+			isDriver: false,
+			isAdmin: false,
+			isSupport: false,
+		};
+		const [isCustomer, isDriver, isAdmin, isSupport] = await Promise.all([
+			prisma.customer.findUnique({ where: { id: userId } }),
+			prisma.driver.findUnique({ where: { id: userId } }),
+			prisma.admin.findUnique({ where: { id: userId } }),
+			prisma.support.findUnique({ where: { id: userId } }),
+		]);
+		roleBooleans.isCustomer = !!isCustomer;
+		roleBooleans.isDriver = !!isDriver;
+		roleBooleans.isAdmin = !!isAdmin;
+		roleBooleans.isSupport = !!isSupport;
+
 		res.json({
 			success: true,
-			data: user,
+			data: { ...user, ...roleBooleans },
 		});
 	} catch (error) {
 		console.log("Error in getMe controller:", error);
