@@ -5,6 +5,7 @@ import {
 	patchMe,
 	getAllUsers,
 	updateUserStatus,
+	deleteUser,
 } from "../controllers/user.controller";
 import { auth } from "../middlewares/auth";
 
@@ -158,5 +159,7 @@ router.get("/:id", getUser);
 router.get("/", getAllUsers);
 
 router.patch("/status/:id", auth, updateUserStatus);
+
+router.delete("/me", auth, deleteUser);
 
 export default router;
