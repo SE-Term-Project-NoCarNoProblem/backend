@@ -58,6 +58,7 @@ export async function reverseGeocode(
 			: `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 	} catch (error) {
 		logger.error("Error in reverse geocoding", { error, lat, lng });
+		console.error("Error in reverse geocoding", { error, lat, lng });
 		return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 	}
 }

@@ -12,6 +12,7 @@ import {
 	getCanceledRequest,
 } from "../lib/requestStore";
 import { io } from "../app";
+import { reverseGeocode } from "../utils/geocoding";
 
 // Ride progress status types
 type RideProgress = "on_the_way" | "arrived" | "picked_up" | "completed";
@@ -655,49 +656,66 @@ export async function myRideHistory(req: Request, res: Response) {
 		}
 
 		const locationMap = new Map(locationRows.map((row) => [row.id, row]));
-		const payload = rides.map((ride) => {
-			const coords = locationMap.get(ride.id);
-			return {
-				id: ride.id,
-				fare: ride.price,
-				requested_at: ride.timestamp,
-				ended_at: ride.ended_at,
-				end_reason: ride.end_reason,
-				ride_status: ride.ride_status,
-				ride_progress_status: ride.ride_progress_status,
-				rating: ride.rating,
-				pickup_lat: coords?.pickup_lat ?? null,
-				pickup_lng: coords?.pickup_lng ?? null,
-				dropoff_lat: coords?.dropoff_lat ?? null,
-				dropoff_lng: coords?.dropoff_lng ?? null,
-				driver: ride.verified_driver
-					? {
-							id: ride.verified_driver.id,
-							name: ride.verified_driver.driver?.user.fullname ?? null,
-							avatar: ride.verified_driver.driver?.user.profile_pic ?? null,
-						}
-					: null,
-				customer: ride.customer
-					? {
-							id: ride.customer.id,
-							name: ride.customer.user.fullname,
-							avatar: ride.customer.user.profile_pic,
-						}
-					: null,
-				vehicle: ride.vehicle
-					? {
-							id: ride.vehicle.id,
-							model: ride.vehicle.model,
-							make: ride.vehicle.make,
-							color: ride.vehicle.color,
-							registration: ride.vehicle.registration,
-							type: ride.vehicle.model_type?.type ?? null,
-						}
-					: null,
-			};
-		});
 
-		return res.json(payload);
+		// Reverse geocode all pickup and destination locations
+		const payloadWithGeocode = await Promise.all(
+			rides.map(async (ride) => {
+				const coords = locationMap.get(ride.id);
+
+				let pickupAddress = null;
+				let dropoffAddress = null;
+
+				if (coords) {
+					[pickupAddress, dropoffAddress] = await Promise.all([
+						reverseGeocode(coords.pickup_lat, coords.pickup_lng),
+						reverseGeocode(coords.dropoff_lat, coords.dropoff_lng),
+					]);
+				}
+
+				return {
+					id: ride.id,
+					fare: ride.price,
+					requested_at: ride.timestamp,
+					ended_at: ride.ended_at,
+					end_reason: ride.end_reason,
+					ride_status: ride.ride_status,
+					ride_progress_status: ride.ride_progress_status,
+					rating: ride.rating,
+					pickup_lat: coords?.pickup_lat ?? null,
+					pickup_lng: coords?.pickup_lng ?? null,
+					pickup_address: pickupAddress,
+					dropoff_lat: coords?.dropoff_lat ?? null,
+					dropoff_lng: coords?.dropoff_lng ?? null,
+					dropoff_address: dropoffAddress,
+					driver: ride.verified_driver
+						? {
+								id: ride.verified_driver.id,
+								name: ride.verified_driver.driver?.user.fullname ?? null,
+								avatar: ride.verified_driver.driver?.user.profile_pic ?? null,
+							}
+						: null,
+					customer: ride.customer
+						? {
+								id: ride.customer.id,
+								name: ride.customer.user.fullname,
+								avatar: ride.customer.user.profile_pic,
+							}
+						: null,
+					vehicle: ride.vehicle
+						? {
+								id: ride.vehicle.id,
+								model: ride.vehicle.model,
+								make: ride.vehicle.make,
+								color: ride.vehicle.color,
+								registration: ride.vehicle.registration,
+								type: ride.vehicle.model_type?.type ?? null,
+							}
+						: null,
+				};
+			})
+		);
+
+		return res.json(payloadWithGeocode);
 	} catch (error) {
 		logger.error("Error fetching ride history", error);
 		return res.status(500).json({ error: "Internal server error" });
