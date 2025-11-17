@@ -7,7 +7,7 @@ import {
 	getDriverRating,
 	getDriverRatingOverTime,
 	updateDriverRating,
-	getCancleOverTime
+	getCancleOverTime,
 } from "../controllers/driver.controller";
 import { auth } from "../middlewares/auth";
 
@@ -18,11 +18,11 @@ router.post("/location", auth, updateDriverLocation);
 
 // Customer fetches all drivers
 router.get("/location", auth, getDrivers);
-router.get("/:driverId/ratingOverTime",getDriverRatingOverTime);
-router.get("/:driverId/cancelOverTime",getCancleOverTime);
+router.get("/:driverId/ratingOverTime", getDriverRatingOverTime);
+router.get("/:driverId/cancelOverTime", getCancleOverTime);
 // Get nearby drivers
 router.get("/nearby", getNearbyDrivers);
-router.get("/viewdriver/:rideId",viewDriver);
+router.get("/viewdriver/:rideId", viewDriver);
 
 // Get rating
 router.get("/:driverId/rating", auth, getDriverRating);

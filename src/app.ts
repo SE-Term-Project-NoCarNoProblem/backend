@@ -58,7 +58,7 @@ app.use("/api/drivers", driverRoutes);
 app.use("/api/rides", ridesRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/customers", customerRoutes);
-app.use("/api/tickets",ticketRoutes);
+app.use("/api/tickets", ticketRoutes);
 // ---------- socket io ----------
 const httpServer = createServer(app);
 export const io = new Server(httpServer, {

@@ -260,129 +260,141 @@ export const getDriverRating = async (req: Request, res: Response) => {
 	}
 };
 const thInstant = (dateUTC: string, hh: number, mm = 0) =>
-  new Date(`${dateUTC}T${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}:00+07:00`);
+	new Date(
+		`${dateUTC}T${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00+07:00`
+	);
 
 export const getDriverRatingOverTime = async (req: Request, res: Response) => {
-  const { driverId } = req.params;
-  const { date } = req.query as { date?: string }; // UTC date string, e.g. "2025-10-21"
+	const { driverId } = req.params;
+	const { date } = req.query as { date?: string }; // UTC date string, e.g. "2025-10-21"
 
-  try {
-    if (!date) return res.status(400).json({ error: "Provide `date` as YYYY-MM-DD" });
+	try {
+		if (!date)
+			return res.status(400).json({ error: "Provide `date` as YYYY-MM-DD" });
 
-    // One DB read for the whole window of interest:
-    // from TH 00:00 (inclusive) to TH 19:00 (exclusive) on that TH calendar date
-    const lastCutOffUtc = thInstant(date, 18, 0);  // -> same day 12:00Z (exclusive)
-	const nowUtc = new Date();
-	const maxCutoffUtc = nowUtc < lastCutOffUtc ? nowUtc : lastCutOffUtc;
-    const rawRides = await prisma.ride.findMany({
-      where: {
-        driver_id: driverId,
-        rating: { not: null },
-        ended_at: { not: null, lte: maxCutoffUtc },
-		
-      },
-      select: { ended_at: true, rating: true },
-      orderBy: { ended_at: "asc" },
-    });
-    const rides = rawRides.filter(
-      (ride): ride is { ended_at: Date; rating: number } =>
-        ride.ended_at !== null && ride.rating !== null
-    );
+		// One DB read for the whole window of interest:
+		// from TH 00:00 (inclusive) to TH 19:00 (exclusive) on that TH calendar date
+		const lastCutOffUtc = thInstant(date, 18, 0); // -> same day 12:00Z (exclusive)
+		const nowUtc = new Date();
+		const maxCutoffUtc = nowUtc < lastCutOffUtc ? nowUtc : lastCutOffUtc;
+		const rawRides = await prisma.ride.findMany({
+			where: {
+				driver_id: driverId,
+				rating: { not: null },
+				ended_at: { not: null, lte: maxCutoffUtc },
+			},
+			select: { ended_at: true, rating: true },
+			orderBy: { ended_at: "asc" },
+		});
+		const rides = rawRides.filter(
+			(ride): ride is { ended_at: Date; rating: number } =>
+				ride.ended_at !== null && ride.rating !== null
+		);
 
-    // Fixed TH cutoffs 06:00..18:00 for that date (13 points)
-    const labels: string[] = [];
-    const cutoffsUTC: Date[] = [];
-    for (let h = 6; h <= 18; h++) {
-      const cutoff = thInstant(date, h, 0);
-      if (cutoff.getTime() <= maxCutoffUtc.getTime()) {
-        labels.push(`${h}.00`);
-        cutoffsUTC.push(cutoff);
-      } else {
-        break; // stop at first future label
-      }
-    }
+		// Fixed TH cutoffs 06:00..18:00 for that date (13 points)
+		const labels: string[] = [];
+		const cutoffsUTC: Date[] = [];
+		for (let h = 6; h <= 18; h++) {
+			const cutoff = thInstant(date, h, 0);
+			if (cutoff.getTime() <= maxCutoffUtc.getTime()) {
+				labels.push(`${h}.00`);
+				cutoffsUTC.push(cutoff);
+			} else {
+				break; // stop at first future label
+			}
+		}
 
-    // Walk once and compute cumulative average "strictly before" each cutoff
-    let i = 0, sum = 0, cnt = 0;
-    const series: (number|null)[] = [];
-    for (const cutoff of cutoffsUTC) {
-      while (i < rides.length && rides[i].ended_at.getTime() < cutoff.getTime()) {
-        sum += Number(rides[i].rating);
-        cnt += 1;
-        i++;
-      }
-      series.push(cnt > 0 ? Number((sum / cnt).toFixed(2)) : null);
-    }
+		// Walk once and compute cumulative average "strictly before" each cutoff
+		let i = 0,
+			sum = 0,
+			cnt = 0;
+		const series: (number | null)[] = [];
+		for (const cutoff of cutoffsUTC) {
+			while (
+				i < rides.length &&
+				rides[i].ended_at.getTime() < cutoff.getTime()
+			) {
+				sum += Number(rides[i].rating);
+				cnt += 1;
+				i++;
+			}
+			series.push(cnt > 0 ? Number((sum / cnt).toFixed(2)) : null);
+		}
 
-    // Stop at first null (drop labels after the last available point)
-    const k = series.findIndex(v => v == null);
-    const out = k === -1
-      ? { labels, data: series }
-      : { labels: labels.slice(0, k), data: series.slice(0, k) };
+		// Stop at first null (drop labels after the last available point)
+		const k = series.findIndex((v) => v == null);
+		const out =
+			k === -1
+				? { labels, data: series }
+				: { labels: labels.slice(0, k), data: series.slice(0, k) };
 
-    return res.json(out);
-  } catch (e) {
-    console.error("getDriverRatingOverTime error:", e);
-    return res.status(500).json({ error: "Internal server error" });
-  }
+		return res.json(out);
+	} catch (e) {
+		console.error("getDriverRatingOverTime error:", e);
+		return res.status(500).json({ error: "Internal server error" });
+	}
 };
 
 export const getCancleOverTime = async (req: Request, res: Response) => {
-  const { driverId } = req.params;
-  const { date } = req.query as { date?: string }; // UTC date string, e.g. "2025-10-21"
+	const { driverId } = req.params;
+	const { date } = req.query as { date?: string }; // UTC date string, e.g. "2025-10-21"
 
-  try {
-    if (!date) return res.status(400).json({ error: "Provide `date` as YYYY-MM-DD" });
+	try {
+		if (!date)
+			return res.status(400).json({ error: "Provide `date` as YYYY-MM-DD" });
 
-    // One DB read for the whole window of interest:
-    // from TH 00:00 (inclusive) to TH 19:00 (exclusive) on that TH calendar date
-    const lastCutOffUtc = thInstant(date, 18, 0);  // -> same day 12:00Z (exclusive)
-	const nowUtc = new Date();
-	const maxCutoffUtc = nowUtc < lastCutOffUtc ? nowUtc : lastCutOffUtc;
-    const rawRides = await prisma.ride.findMany({
-      where: {
-        driver_id: driverId,
-        ride_status: "canceled",
-        ended_at: { not: null, lte: maxCutoffUtc },
-      },
-      select: { ended_at: true },
-      orderBy: { ended_at: "asc" },
-    });
-    const rides = rawRides.filter(
-      (ride): ride is { ended_at: Date } => ride.ended_at !== null
-    );
+		// One DB read for the whole window of interest:
+		// from TH 00:00 (inclusive) to TH 19:00 (exclusive) on that TH calendar date
+		const lastCutOffUtc = thInstant(date, 18, 0); // -> same day 12:00Z (exclusive)
+		const nowUtc = new Date();
+		const maxCutoffUtc = nowUtc < lastCutOffUtc ? nowUtc : lastCutOffUtc;
+		const rawRides = await prisma.ride.findMany({
+			where: {
+				driver_id: driverId,
+				ride_status: "canceled",
+				ended_at: { not: null, lte: maxCutoffUtc },
+			},
+			select: { ended_at: true },
+			orderBy: { ended_at: "asc" },
+		});
+		const rides = rawRides.filter(
+			(ride): ride is { ended_at: Date } => ride.ended_at !== null
+		);
 
-    // Fixed TH cutoffs 06:00..18:00 for that date (13 points)
-    const labels: string[] = [];
-    const cutoffsUTC: Date[] = [];
-    for (let h = 6; h <= 18; h++) {
-      const cutoff = thInstant(date, h, 0);
-      if (cutoff.getTime() <= maxCutoffUtc.getTime()) {
-        labels.push(`${h}.00`);
-        cutoffsUTC.push(cutoff);
-      } else {
-        break; // stop at first future label
-      }
-    }
+		// Fixed TH cutoffs 06:00..18:00 for that date (13 points)
+		const labels: string[] = [];
+		const cutoffsUTC: Date[] = [];
+		for (let h = 6; h <= 18; h++) {
+			const cutoff = thInstant(date, h, 0);
+			if (cutoff.getTime() <= maxCutoffUtc.getTime()) {
+				labels.push(`${h}.00`);
+				cutoffsUTC.push(cutoff);
+			} else {
+				break; // stop at first future label
+			}
+		}
 
-    // Walk once and compute cumulative average "strictly before" each cutoff
-    let i = 0, cnt = 0;
-    const series: number[] = [];
-    for (const cutoff of cutoffsUTC) {
-      while (i < rides.length && rides[i].ended_at.getTime() < cutoff.getTime()) {
-        cnt += 1;
-        i++;
-      }
-      series.push(cnt);
-    }
+		// Walk once and compute cumulative average "strictly before" each cutoff
+		let i = 0,
+			cnt = 0;
+		const series: number[] = [];
+		for (const cutoff of cutoffsUTC) {
+			while (
+				i < rides.length &&
+				rides[i].ended_at.getTime() < cutoff.getTime()
+			) {
+				cnt += 1;
+				i++;
+			}
+			series.push(cnt);
+		}
 
-    return res.json({ labels, data: series });
-  } catch (e) {
-    console.error("getDriverRatingOverTime error:", e);
-    return res.status(500).json({ error: "Internal server error" });
-  }
+		return res.json({ labels, data: series });
+	} catch (e) {
+		console.error("getDriverRatingOverTime error:", e);
+		return res.status(500).json({ error: "Internal server error" });
+	}
 };
-
 
 // update driver rating
 export const updateDriverRating = async (req: Request, res: Response) => {
