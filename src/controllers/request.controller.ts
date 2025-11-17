@@ -67,8 +67,22 @@ export function calculateFareEndpoint(req: Request, res: Response) {
 	if (Number.isNaN(distanceM) || distanceM < 0) {
 		return res.status(400).json({ error: "invalid_distance" });
 	}
-	const fare = calculateFare(distanceM);
-	return res.json({ distance_m: distanceM, fare_baht: fare });
+
+	// vehicle multiplier
+	const type = String(req.query.service || "car");
+	const multipliers: Record<string, number> = {
+		motorcycle: 0.75,
+		car: 1.0,
+		van: 1.35,
+	};
+	const multiplier = multipliers[type] ?? 1.0; // default = car
+
+	const fare = calculateFare(distanceM) * multiplier;
+
+	return res.json({
+		distance_m: distanceM,
+		fare_baht: fare,
+	});
 }
 
 export async function createRequest(req: Request, res: Response) {
