@@ -208,6 +208,6 @@ router.patch("/:id/status", auth, requireVerifiedDriver, updateRideStatus);
  *       404:
  *         description: Ride not found
  */
-router.delete("/:id", auth, requireVerifiedDriver, cancelRide);
+router.delete("/:id", auth, cancelRide);
 
 export default router;
