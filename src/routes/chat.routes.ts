@@ -9,7 +9,7 @@ const router = Router();
 
 /**
  * @swagger
- * /api/chat/messages:
+ * /api/chat/messages/{rideId}:
  *   get:
  *     summary: Get chat messages for a ride
  *     description: Retrieve all chat messages for a specific ride
@@ -17,7 +17,7 @@ const router = Router();
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
+ *       - in: path
  *         name: rideId
  *         required: true
  *         schema:
@@ -55,7 +55,7 @@ const router = Router();
  *       404:
  *         description: Ride not found
  */
-router.get("/messages", auth, getChatMessages);
+router.get("/messages/:rideId", auth, getChatMessages);
 
 /**
  * @swagger

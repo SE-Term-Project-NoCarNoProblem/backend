@@ -5,6 +5,7 @@ import cors from "cors";
 import { logger } from "./utils/logger";
 import { requestLog } from "./middlewares/logging";
 
+// routes
 import profileRoutes from "./routes/profile.routes";
 import userRoutes from "./routes/user.routes";
 import authRoutes from "./routes/auth.routes";
@@ -15,6 +16,8 @@ import customerRoutes from "./routes/customer.routes";
 import ticketRoutes from "./routes/ticket.routes";
 import adminDriverRoutes from "./routes/admin.driver.routes";
 import adminRoutes from "./routes/admin.routes";
+import chatRoutes from "./routes/chat.routes";
+
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import {
@@ -25,6 +28,11 @@ import {
 } from "./controllers/driver.controller";
 import { authSocket } from "./middlewares/auth";
 import { prisma } from "./lib/prisma";
+import { registerChatEvents } from "./controllers/chat.controller";
+import {
+	registerSocketSession,
+	unregisterSocketSession,
+} from "./lib/socketSessions";
 
 const app = express();
 
@@ -63,6 +71,7 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin/drivers", adminDriverRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/chat", chatRoutes);
 
 // ---------- socket io ----------
 const httpServer = createServer(app);
@@ -76,6 +85,7 @@ io.use(authSocket);
 function registerGeneralEvents(socket: Socket) {
 	socket.on("disconnect", () => {
 		logger.debug(`Client disconnected, now ${io.engine.clientsCount}`);
+		unregisterSocketSession(socket.data.user_id, socket.id);
 	});
 }
 
@@ -83,7 +93,9 @@ io.on("connection", (socket) => {
 	logger.debug(`Client connected, now ${io.engine.clientsCount}`);
 	registerGeneralEvents(socket);
 	registerDriverEvents(socket);
+	registerChatEvents(socket);
 	socket.emit("position:driver_positions", getDriverPositions());
+	registerSocketSession(socket.data.user_id, socket.id);
 });
 
 setInterval(() => {
