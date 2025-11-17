@@ -221,28 +221,6 @@ export async function patchMe(req: Request, res: Response) {
 				}
 			}
 
-			if (existingUser.driver?.verified_driver) {
-				const verifiedDriverId = existingUser.driver.verified_driver.id;
-
-				// delete all vehicles associated with this verified driver
-				await tx.vehicle.deleteMany({
-					where: { driver_id: verifiedDriverId },
-				});
-
-				// Then delete the verified driver
-				await tx.verified_driver.delete({
-					where: { id: verifiedDriverId },
-				});
-
-				// Finally, add to waiting driver
-				await tx.waiting_driver.create({
-					data: {
-						id: existingUser.driver.id,
-						requested_date: new Date(),
-					},
-				});
-			}
-
 			const finalUser = await tx.user.findUnique({
 				where: { id: userId },
 				include: {
