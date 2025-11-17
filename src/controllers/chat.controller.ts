@@ -29,7 +29,7 @@ export async function getChatMessages(req: Request, res: Response) {
 	try {
 		const messages = await prisma.chat_log.findMany({
 			where: { ride_id: rideId },
-			orderBy: { timestamp: "desc" },
+			orderBy: { timestamp: "asc" },
 			// take: 50,
 		});
 		return res.status(200).json({
